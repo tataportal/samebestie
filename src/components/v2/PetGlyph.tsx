@@ -1,10 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { v2Colors, v2Text } from '../../theme/v2';
 import { PetAnimal } from '../../types';
 
+// Real profile image — extracted from the penguin video
+const PROFILE_IMG = require('../../../assets/images/penguin-profile.png');
+
+// Fallback emojis for non-penguin species
 const EMOJI: Record<PetAnimal, string> = {
-  penguin: '🐧',
+  penguin: '',
   cat: '🐱',
   fox: '🦊',
   frog: '🐸',
@@ -12,9 +16,8 @@ const EMOJI: Record<PetAnimal, string> = {
 };
 
 /**
- * Pet glyph framed as a library catalog thumbnail — emoji centered over
- * a cream wash, ringed in ink with serial/class marks. Replaces the dark
- * penguin sprite in V2.
+ * Pet portrait framed as a library catalog thumbnail.
+ * Uses the real penguin profile image; falls back to emoji for other species.
  */
 export function PetGlyph({
   animal = 'penguin',
@@ -27,23 +30,33 @@ export function PetGlyph({
   label?: string;
   serial?: string;
 }) {
+  const usesImage = animal === 'penguin';
+
   return (
     <View style={[styles.frame, { width: size, height: size }]}>
-      <View
-        style={[
-          styles.innerRing,
-          { width: size - 18, height: size - 18 },
-        ]}
-      />
-      <Text style={[styles.emoji, { fontSize: size * 0.5 }]}>
-        {EMOJI[animal]}
-      </Text>
+      {usesImage ? (
+        <Image
+          source={PROFILE_IMG}
+          style={[StyleSheet.absoluteFill, { borderRadius: 2 }]}
+          resizeMode="cover"
+        />
+      ) : (
+        <>
+          <View
+            style={[
+              styles.innerRing,
+              { width: size - 18, height: size - 18 },
+            ]}
+          />
+          <Text style={[styles.emoji, { fontSize: size * 0.5 }]}>
+            {EMOJI[animal]}
+          </Text>
+        </>
+      )}
 
-      {/* corner marks */}
-      <Text style={[styles.cornerMark, { top: 10, left: 12 }]}>§</Text>
-      <Text style={[styles.cornerMark, { top: 10, right: 12 }]}>§</Text>
-      <Text style={[styles.cornerMark, { bottom: 10, left: 12 }]}>§</Text>
-      <Text style={[styles.cornerMark, { bottom: 10, right: 12 }]}>§</Text>
+      {/* corner marks — on top of image */}
+      <Text style={[styles.cornerMark, { top: 8, left: 10 }]}>§</Text>
+      <Text style={[styles.cornerMark, { top: 8, right: 10 }]}>§</Text>
 
       {/* bottom serial band */}
       {(label || serial) && (
@@ -93,17 +106,20 @@ const styles = StyleSheet.create({
   },
   cornerMark: {
     position: 'absolute',
-    color: v2Colors.stamp,
-    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
     fontFamily:
       'Fraunces, "Hoefler Text", Garamond, Georgia, serif',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   band: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: v2Colors.ink,
+    backgroundColor: 'rgba(20,32,58,0.85)',
     paddingVertical: 4,
     paddingHorizontal: 10,
     flexDirection: 'row',
