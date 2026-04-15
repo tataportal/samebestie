@@ -76,6 +76,63 @@ export function V2WebFonts() {
         /* wonky Fraunces axes for display flair */
         .v2-wonk { font-variation-settings: "SOFT" 50, "WONK" 1, "opsz" 144; }
         .v2-soft { font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 144; }
+
+        /* ── MOBILE FRAME ON DESKTOP ─────────────── */
+        @media (min-width: 520px) {
+          html, body {
+            background: #E6DCC5 !important;
+            background-image:
+              radial-gradient(circle at 20% 30%, rgba(242,70,46,0.04) 0%, transparent 40%),
+              radial-gradient(circle at 80% 70%, rgba(31,89,54,0.04) 0%, transparent 40%) !important;
+          }
+          #root {
+            max-width: 430px !important;
+            min-height: 100vh;
+            margin: 0 auto !important;
+            box-shadow:
+              0 0 0 1px #14203A,
+              6px 6px 0 0 #14203A;
+            position: relative;
+            overflow-x: hidden;
+          }
+          /* serial label on the outer frame */
+          body::before {
+            content: "SAME, BESTIE · VOL. II · MOBILE PREVIEW";
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: "JetBrains Mono", "Menlo", monospace;
+            font-size: 9px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #8A7456;
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+          }
+          body::after {
+            content: "✦ ❋ ✦";
+            position: fixed;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: #8A7456;
+            pointer-events: none;
+            z-index: 9999;
+          }
+        }
+
+        /* Extra-wide: add more breathing room */
+        @media (min-width: 768px) {
+          #root {
+            margin-top: 36px !important;
+            margin-bottom: 36px !important;
+            min-height: calc(100vh - 72px);
+            border-radius: 4px;
+          }
+        }
       `;
       document.head.appendChild(style);
     }
