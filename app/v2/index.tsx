@@ -1,0 +1,8 @@
+import { Redirect } from 'expo-router';
+import { useUserStore } from '../../src/store/useUserStore';
+
+export default function V2Index() {
+  const isOnboarded = useUserStore((s) => s.isOnboarded);
+  if (!isOnboarded) return <Redirect href="/v2/landing" />;
+  return <Redirect href="/v2/(tabs)/pet" />;
+}

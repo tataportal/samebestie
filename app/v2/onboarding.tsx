@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   TextInput,
   Pressable,
   ScrollView,
@@ -32,7 +33,7 @@ import { v2Colors, v2Text, v2Space } from '../../src/theme/v2';
 import { V2WebFonts } from '../../src/components/v2/WebFonts';
 
 const STEPS = [
-  { n: 'I',   title: 'An introduction',  sub: 'Admission to the library' },
+  { n: 'I',   title: 'Same, Bestie',     sub: 'Your focus companion' },
   { n: 'II',  title: 'Your companion',   sub: 'A small creature, chosen' },
   { n: 'III', title: 'Their temperament', sub: 'How they shall keep you' },
   { n: 'IV',  title: 'Ready',            sub: 'Signed, stamped, begun' },
@@ -65,37 +66,22 @@ export default function V2Onboarding() {
     setPetAnimal(animal);
     setPersonality(personality);
     completeOnboarding();
-    router.replace('/v2');
+    router.replace('/v2/(tabs)/pet');
   };
 
   return (
     <PaperLayer>
       <V2WebFonts />
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
+      <View
+        style={[
           styles.container,
           {
             paddingTop: insets.top + v2Space.md,
-            paddingBottom: insets.bottom + v2Space.xxl,
+            paddingBottom: insets.bottom + v2Space.sm,
           },
         ]}
-        showsVerticalScrollIndicator={false}
       >
-        {/* ── MASTHEAD + STEP PROGRESS ──────────── */}
-        <View style={styles.masthead}>
-          <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
-            ADMISSION FORM · N°{STEPS[step].n}
-          </Text>
-          <Pressable onPress={() => router.push('/')} style={styles.skip}>
-            <Text style={[v2Text.serial, { color: v2Colors.inkMuted }]}>
-              skip · V1 →
-            </Text>
-          </Pressable>
-        </View>
-        <RuledDivider variant="double" color={v2Colors.ink} style={{ marginTop: 8 }} />
-
-        {/* Step indicator */}
+        {/* Step indicator — centered */}
         <View style={styles.stepRow}>
           {STEPS.map((s, i) => {
             const filled = i <= step;
@@ -138,116 +124,115 @@ export default function V2Onboarding() {
           })}
         </View>
 
-        {/* ── STEP TITLE ────────────────────────── */}
-        <View style={styles.heroBlock}>
-          <Text
-            // @ts-ignore
-            className={Platform.OS === 'web' ? 'v2-soft' : undefined}
-            style={[v2Text.heroSerif, { color: v2Colors.ink }]}
-          >
-            {STEPS[step].title}
-            <Text style={{ color: v2Colors.coral }}>.</Text>
-          </Text>
-          <Text
-            style={[
-              v2Text.sectionSerif,
-              {
-                color: v2Colors.inkSoft,
-                fontStyle: 'italic',
-                marginTop: 6,
-              },
-            ]}
-          >
-            {STEPS[step].sub}
-          </Text>
-        </View>
-
-        {/* ── STEP CONTENT ──────────────────────── */}
-        {step === 0 && (
-          <View>
-            <View style={styles.welcomeArt}>
-              <PetGlyph animal="penguin" size={160} label="BESTIE" serial="001" />
-              <Stamp
-                label="WELCOME"
-                sub="TO VOL. II"
-                color={v2Colors.coral}
-                rotate={-14}
-                style={styles.welcomeStamp}
-              />
-            </View>
-            <IndexCard
-              tint={v2Colors.paperBright}
-              accent={v2Colors.coral}
-              serial="PREFACE"
-              style={styles.prefaceCard}
+        {/* ── STEP TITLE (non-step-0) ────────────── */}
+        {step > 0 && (
+          <View style={styles.heroBlock}>
+            <Text
+              // @ts-ignore
+              className={Platform.OS === 'web' ? 'v2-soft' : undefined}
+              style={[v2Text.heroSerif, { color: v2Colors.ink }]}
             >
-              <Text
-                style={[
-                  v2Text.quote,
-                  { color: v2Colors.ink, fontSize: 18, lineHeight: 27 },
-                ]}
-              >
-                <Text style={{ color: v2Colors.coral, fontSize: 36, lineHeight: 26 }}>“</Text>
-                A private correspondence is about to begin between you, your
-                attention, and the small creature who shall keep watch over
-                it. Kindly proceed.
-                <Text style={{ color: v2Colors.coral, fontSize: 36, lineHeight: 26 }}>”</Text>
-              </Text>
-              <Text
-                style={[
-                  v2Text.serial,
-                  { color: v2Colors.stamp, marginTop: v2Space.md },
-                ]}
-              >
-                — SIGNED, THE LIBRARY
-              </Text>
-            </IndexCard>
+              {STEPS[step].title}
+              <Text style={{ color: v2Colors.coral }}>.</Text>
+            </Text>
+            <Text
+              style={[
+                v2Text.sectionSerif,
+                { color: v2Colors.inkSoft, fontStyle: 'italic', marginTop: 6 },
+              ]}
+            >
+              {STEPS[step].sub}
+            </Text>
+          </View>
+        )}
+
+        {/* ── STEP 0: APP INTRO ──────────────────── */}
+        {step === 0 && (
+          <View style={styles.introScreen}>
+            <Text
+              // @ts-ignore
+              className={Platform.OS === 'web' ? 'v2-wonk' : undefined}
+              style={styles.introTitle}
+            >
+              Same, <Text style={styles.introTitleAccent}>Bestie</Text>.
+            </Text>
+
+            <Text style={styles.introDesc}>
+              Focusing alone is hard. So we made you a little creature that
+              sits with you while you work — judges you a bit, cheers you
+              on a lot, and keeps score.
+            </Text>
+
+            <View style={styles.introChips}>
+              {[
+                { emoji: '🍅', text: 'Adapts to your energy' },
+                { emoji: '🐧', text: 'Has opinions about you' },
+                { emoji: '📈', text: 'Tracks your streaks' },
+                { emoji: '🧠', text: 'Learns how you focus' },
+              ].map((item, i) => (
+                <View key={i} style={styles.introChip}>
+                  <Text style={{ fontSize: 22 }}>{item.emoji}</Text>
+                  <Text style={[v2Text.body, { color: v2Colors.ink, fontSize: 15 }]}>{item.text}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
         {step === 1 && (
-          <View>
-            <FieldLabel>Select a species</FieldLabel>
-            <View style={styles.animalGrid}>
-              {PET_ANIMALS.map((a) => {
+          <View style={styles.pickScreen}>
+            <Text style={[v2Text.quote, { color: v2Colors.inkSoft, fontSize: 17, lineHeight: 24, marginBottom: v2Space.md }]}>
+              Who's going to keep you company?
+            </Text>
+
+            <View style={styles.speciesGrid}>
+              {[
+                { type: 'penguin', label: 'Penguin', available: true },
+                { type: 'cat',     label: 'Cat',     available: false },
+                { type: 'fox',     label: 'Fox',     available: false },
+                { type: 'random',  label: 'Random',  available: false },
+              ].map((a) => {
                 const active = animal === a.type;
+                const locked = !a.available;
                 return (
                   <Pressable
                     key={a.type}
-                    onPress={() => setAnimal(a.type)}
+                    onPress={() => { if (a.available) setAnimal(a.type as PetAnimal); }}
                     style={[
-                      styles.animalCard,
-                      {
-                        borderColor: active ? v2Colors.ink : v2Colors.paperShadow,
-                        backgroundColor: active
-                          ? v2Colors.coralWash
-                          : v2Colors.paperBright,
-                      },
-                      active && {
-                        shadowColor: v2Colors.ink,
-                        shadowOffset: { width: 3, height: 3 },
-                        shadowOpacity: 1,
-                        shadowRadius: 0,
-                      },
+                      styles.speciesCell,
+                      active && styles.speciesCellActive,
+                      locked && styles.speciesCellLocked,
                     ]}
                   >
-                    <Text style={styles.animalEmoji}>{a.emoji}</Text>
-                    <Text
-                      style={[
-                        v2Text.serial,
-                        { color: v2Colors.stamp, marginTop: 4 },
-                      ]}
-                    >
-                      {a.label.toUpperCase()}
-                    </Text>
+                    {a.type === 'penguin' ? (
+                      <Image
+                        source={require('../../assets/images/penguin-avatar.png')}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={{ fontSize: 36, opacity: locked ? 0.3 : 1 }}>
+                        {a.type === 'random' ? '🎲' : PET_ANIMALS.find(p => p.type === a.type)?.emoji || '?'}
+                      </Text>
+                    )}
+                    <View style={styles.speciesLabel}>
+                      <Text style={[v2Text.serial, { color: active ? v2Colors.paperBright : locked ? v2Colors.inkMuted : v2Colors.stamp }]}>
+                        {a.label.toUpperCase()}
+                      </Text>
+                      {locked && (
+                        <Text style={[v2Text.serial, { color: v2Colors.inkMuted, fontSize: 7 }]}>
+                          SOON
+                        </Text>
+                      )}
+                    </View>
                   </Pressable>
                 );
               })}
             </View>
 
-            <FieldLabel style={{ marginTop: v2Space.lg }}>
-              Assign a name
-            </FieldLabel>
+            <Text style={[v2Text.quote, { color: v2Colors.inkSoft, fontSize: 15, marginTop: v2Space.lg }]}>
+              Give them a name
+            </Text>
             <TextInput
               value={name}
               onChangeText={setName}
@@ -261,7 +246,7 @@ export default function V2Onboarding() {
         )}
 
         {step === 2 && (
-          <View style={styles.persoGrid}>
+          <View style={[styles.persoGrid, { flex: 1 }]}>
             {PERSONALITIES.map((p) => {
               const active = personality === p.type;
               const accent = PERSONALITY_ACCENT[p.type as Personality];
@@ -330,127 +315,120 @@ export default function V2Onboarding() {
         )}
 
         {step === 3 && (
-          <IndexCard
-            style={styles.signCard}
-            tint={v2Colors.paperBright}
-            accent={v2Colors.coral}
-            serial="RECEIPT"
-          >
-            <View style={styles.signRow}>
-              <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
-                ON RECORD FOR
-              </Text>
-              <Text style={[v2Text.cardSerif, { color: v2Colors.ink, fontStyle: 'italic' }]}>
-                {name.trim() || 'Bestie'}
-              </Text>
-            </View>
-            <RuledDivider variant="dotted" style={{ marginVertical: 8 }} />
-            <View style={styles.signRow}>
-              <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
-                SPECIES
-              </Text>
-              <Text style={[v2Text.cardSerif, { color: v2Colors.ink, fontStyle: 'italic' }]}>
-                {PET_ANIMALS.find((a) => a.type === animal)?.emoji}{' '}
-                {PET_ANIMALS.find((a) => a.type === animal)?.label}
-              </Text>
-            </View>
-            <RuledDivider variant="dotted" style={{ marginVertical: 8 }} />
-            <View style={styles.signRow}>
-              <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
-                TEMPERAMENT
-              </Text>
-              <Text
-                style={[
-                  v2Text.cardSerif,
-                  {
-                    color: PERSONALITY_ACCENT[personality],
-                    fontStyle: 'italic',
-                  },
-                ]}
-              >
-                {PERSONALITIES.find((p) => p.type === personality)?.label}
-              </Text>
-            </View>
-            <RuledDivider variant="double" color={v2Colors.ink} style={{ marginVertical: v2Space.md }} />
-            <View style={styles.signFoot}>
-              <Stamp
-                label="APPROVED"
-                sub="FOR FOCUS"
-                color={v2Colors.moss}
-                rotate={-6}
-                size={80}
-              />
-              <View style={{ flex: 1, marginLeft: v2Space.md }}>
-                <Text
-                  style={[
-                    v2Text.quote,
-                    { color: v2Colors.ink, fontSize: 16, lineHeight: 22 },
-                  ]}
-                >
-                  Welcome, {name.trim() || 'Bestie'}. Your attention will be
-                  kept, briefly and with care.
+          <View style={{ flex: 1 }}>
+            <IndexCard
+              style={styles.signCard}
+              tint={v2Colors.paperBright}
+              accent={v2Colors.coral}
+            >
+              <Text style={[v2Text.field, { color: v2Colors.stamp, marginBottom: v2Space.sm }]}>PERSONAL FILE</Text>
+
+              {/* Photo with stamp overlapping */}
+              <View style={{ alignSelf: 'center', position: 'relative', marginBottom: v2Space.md }}>
+                <Stamp
+                  label="APPROVED"
+                  sub="FOR FOCUS"
+                  color={v2Colors.moss}
+                  rotate={-14}
+                  size={150}
+                  style={{ position: 'absolute', top: -30, right: -75, zIndex: 2 }}
+                />
+              <View style={styles.filePhoto}>
+                <Image
+                  source={require('../../assets/images/penguin-avatar.png')}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              </View>
+              </View>
+              <RuledDivider variant="dotted" style={{ marginVertical: 8 }} />
+              <View style={styles.signRow}>
+                <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
+                  ON RECORD FOR
                 </Text>
-                <Text
-                  style={[
-                    v2Text.serial,
-                    { color: v2Colors.stamp, marginTop: 8, fontStyle: 'italic' },
-                  ]}
-                >
-                  — BESTIE, RESIDENT COMPANION
+                <Text style={[v2Text.cardSerif, { color: v2Colors.ink, fontStyle: 'italic' }]}>
+                  {name.trim() || 'Bestie'}
                 </Text>
               </View>
-            </View>
-          </IndexCard>
+              <RuledDivider variant="dotted" style={{ marginVertical: 8 }} />
+              <View style={styles.signRow}>
+                <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
+                  SPECIES
+                </Text>
+                <Text style={[v2Text.cardSerif, { color: v2Colors.ink, fontStyle: 'italic' }]}>
+                  {PET_ANIMALS.find((a) => a.type === animal)?.emoji}{' '}
+                  {PET_ANIMALS.find((a) => a.type === animal)?.label}
+                </Text>
+              </View>
+              <RuledDivider variant="dotted" style={{ marginVertical: 8 }} />
+              <View style={styles.signRow}>
+                <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
+                  TEMPERAMENT
+                </Text>
+                <Text
+                  style={[
+                    v2Text.cardSerif,
+                    { color: PERSONALITY_ACCENT[personality], fontStyle: 'italic' },
+                  ]}
+                >
+                  {PERSONALITIES.find((p) => p.type === personality)?.label}
+                </Text>
+              </View>
+              <RuledDivider variant="double" color={v2Colors.ink} style={{ marginVertical: v2Space.md }} />
+              <View style={styles.signFoot}>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      v2Text.quote,
+                      { color: v2Colors.ink, fontSize: 16, lineHeight: 22 },
+                    ]}
+                  >
+                    Welcome, {name.trim() || 'Bestie'}. Your attention will be
+                    kept, briefly and with care.
+                  </Text>
+                  <Text
+                    style={[
+                      v2Text.serial,
+                      { color: v2Colors.stamp, marginTop: 8, fontStyle: 'italic' },
+                    ]}
+                  >
+                    — BESTIE, RESIDENT COMPANION
+                  </Text>
+                </View>
+              </View>
+            </IndexCard>
+          </View>
         )}
 
         {/* ── NAV ───────────────────────────────── */}
         <View style={styles.actions}>
           {step > 0 && (
-            <View style={{ flex: 1 }}>
-              <InkButton
-                label="Back"
-                sublabel="one page back"
-                variant="paper"
-                onPress={prev}
-                full
-              />
-            </View>
+            <Pressable onPress={prev} style={styles.backBtn}>
+              <Text style={{ color: v2Colors.ink, fontSize: 24 }}>←</Text>
+            </Pressable>
           )}
-          <View style={{ flex: 1.2 }}>
+          <View style={{ flex: 1, opacity: step === 1 && !name.trim() ? 0.4 : 1 }}>
             <InkButton
-              label={step === 3 ? 'Begin' : 'Continue'}
-              sublabel={step === 3 ? 'open the library' : 'turn the page'}
+              label={step === 1 && !name.trim() ? 'Name required' : step === 3 ? 'Begin' : 'Continue'}
+              sublabel={step === 3 ? 'open the library' : ''}
               variant="ink"
-              onPress={step === 3 ? finish : next}
+              onPress={step === 1 && !name.trim() ? undefined : step === 3 ? finish : next}
               full
             />
           </View>
         </View>
 
-        <View style={styles.foot}>
-          <Asterism char="✦" color={v2Colors.stamp} size={12} />
-          <Text
-            style={[
-              v2Text.serial,
-              {
-                color: v2Colors.stamp,
-                textAlign: 'center',
-                marginTop: 4,
-                fontStyle: 'italic',
-              },
-            ]}
-          >
-            Page {step + 1} of {STEPS.length}
-          </Text>
-        </View>
-      </ScrollView>
+        <Text style={[v2Text.serial, { color: v2Colors.stamp, textAlign: 'center', marginTop: v2Space.sm }]}>
+          {step + 1} / {STEPS.length}
+        </Text>
+      </View>
     </PaperLayer>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  container: { paddingHorizontal: v2Space.lg },
+  container: { flex: 1, paddingHorizontal: v2Space.lg },
   masthead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -461,11 +439,11 @@ const styles = StyleSheet.create({
   stepRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: v2Space.md,
     marginBottom: v2Space.md,
   },
   stepItem: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -478,9 +456,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepBar: {
-    flex: 1,
+    width: 24,
     height: 1.5,
     marginHorizontal: 4,
+  },
+
+  introScreen: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  introTitle: {
+    fontFamily: '"Fraunces", "Hoefler Text", Georgia, serif',
+    fontSize: 52,
+    lineHeight: 56,
+    color: v2Colors.ink,
+    letterSpacing: -1,
+    fontWeight: '400' as const,
+  },
+  introTitleAccent: {
+    color: v2Colors.coral,
+    fontStyle: 'italic',
+    fontWeight: '300' as const,
+  },
+  introDesc: {
+    fontFamily: '"Fraunces", "Hoefler Text", Georgia, serif',
+    fontSize: 20,
+    lineHeight: 30,
+    color: v2Colors.inkSoft,
+    fontStyle: 'italic',
+    marginTop: v2Space.md,
+    marginBottom: v2Space.lg,
+  },
+  introChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: v2Space.sm,
+  },
+  introChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: v2Colors.paperBright,
+    borderWidth: 1,
+    borderColor: v2Colors.paperShadow,
+    borderRadius: 999,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
   },
 
   heroBlock: {
@@ -506,24 +527,49 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
   },
 
-  animalGrid: {
+  pickScreen: {
+    flex: 1,
+  },
+  speciesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: v2Space.sm,
+    gap: 8,
   },
-  animalCard: {
-    flex: 1,
-    flexBasis: 90,
-    minWidth: 78,
-    paddingVertical: v2Space.md,
-    paddingHorizontal: v2Space.sm,
+  speciesCell: {
+    width: '47%',
+    flexGrow: 1,
+    aspectRatio: 1,
     borderWidth: 1.5,
-    borderRadius: 4,
+    borderColor: v2Colors.paperShadow,
+    borderRadius: 8,
+    backgroundColor: v2Colors.paperBright,
     alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  animalEmoji: {
-    fontSize: 34,
-    lineHeight: 38,
+  speciesCellActive: {
+    borderColor: v2Colors.ink,
+    borderWidth: 2,
+    shadowColor: v2Colors.ink,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  speciesCellLocked: {
+    backgroundColor: v2Colors.paperDeep,
+    opacity: 0.6,
+  },
+  speciesLabel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(20,32,58,0.75)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   nameInput: {
     marginTop: v2Space.sm,
@@ -561,28 +607,36 @@ const styles = StyleSheet.create({
     height: 4,
   },
 
-  signCard: {
-    marginTop: v2Space.md,
-    shadowColor: v2Colors.ink,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+  filePhoto: {
+    width: 200,
+    height: 200,
+    borderWidth: 1,
+    borderColor: v2Colors.ink,
+    borderRadius: 4,
+    overflow: 'hidden',
+    alignSelf: 'center',
   },
   signRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
-  },
-  signFoot: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
 
   actions: {
     flexDirection: 'row',
-    gap: v2Space.md,
-    marginTop: v2Space.xl,
+    alignItems: 'center',
+    gap: v2Space.sm,
+    marginTop: v2Space.md,
+  },
+  backBtn: {
+    width: 48,
+    height: 48,
+    borderWidth: 1.5,
+    borderColor: v2Colors.ink,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: v2Colors.paperBright,
   },
 
   foot: {

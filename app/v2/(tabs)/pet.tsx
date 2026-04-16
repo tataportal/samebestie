@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useVideoPlayer, VideoView } from 'expo-video';
+// expo-video removed — using native <video> on web for reliability
 import { PaperLayer } from '../../../src/components/v2/PaperLayer';
 import {
   RuledDivider,
@@ -22,6 +22,7 @@ import {
 } from '../../../src/components/v2/Primitives';
 import { useUserStore } from '../../../src/store/useUserStore';
 import { usePetStore } from '../../../src/store/usePetStore';
+import { useFocusStore } from '../../../src/store/useFocusStore';
 import { getBestieQuote } from '../../../src/utils/moodEngine';
 import { getBondXPMax } from '../../../src/utils/levelSystem';
 import {
@@ -59,6 +60,7 @@ export default function V2Pet() {
   const insets = useSafeAreaInsets();
 
   const currentStreak = useUserStore((s) => s.currentStreak);
+  const startSession = useFocusStore((s) => s.startSession);
   const petName = usePetStore((s) => s.petName);
   const personality = usePetStore((s) => s.personality);
   const mood = usePetStore((s) => s.mood);
@@ -74,10 +76,8 @@ export default function V2Pet() {
   const tierName = BOND_TIER_NAMES[bondTier];
   const quote = getBestieQuote(personality, 'idle');
 
-  const player = useVideoPlayer(
-    require('../../../assets/images/penguin-happy.mp4'),
-    (p) => { p.loop = true; p.muted = true; p.play(); },
-  );
+  // Video source resolved at require time for Metro
+  const videoSource = require('../../../assets/images/penguin-happy.mp4');
 
   return (
     <PaperLayer>
@@ -117,43 +117,56 @@ export default function V2Pet() {
 
         <RuledDivider variant="double" color={v2Colors.ink} style={{ marginTop: 8 }} />
 
-        {/* ── HERO: Name & pet ───────────────────── */}
+        {/* ── HERO: Profile pic + Name ─────────────── */}
         <View style={styles.hero}>
-          <Text
-            // @ts-ignore
-            className={Platform.OS === 'web' ? 'v2-wonk' : undefined}
-            style={[v2Text.heroSerif, { color: v2Colors.ink }]}
-          >
-            {petName || 'Bestie'}
-            <Text style={{ color: v2Colors.coral }}>.</Text>
-          </Text>
-          <Text
-            // @ts-ignore
-            className={Platform.OS === 'web' ? 'v2-soft' : undefined}
-            style={[
-              v2Text.sectionSerif,
-              {
-                color: v2Colors.inkSoft,
-                fontStyle: 'italic',
-                fontWeight: '400',
-                marginTop: 4,
-              },
-            ]}
-          >
-            a {personality} companion · {petAnimal}
-          </Text>
+          <Image
+            source={require('../../../assets/images/penguin-avatar.png')}
+            style={styles.profilePic}
+            resizeMode="cover"
+          />
+          <View style={styles.heroText}>
+            <Text
+              // @ts-ignore
+              className={Platform.OS === 'web' ? 'v2-wonk' : undefined}
+              style={[v2Text.heroSerif, { color: v2Colors.ink, fontSize: 42, lineHeight: 44 }]}
+            >
+              {petName || 'Bestie'}
+              <Text style={{ color: v2Colors.coral }}>.</Text>
+            </Text>
+            <Text
+              // @ts-ignore
+              className={Platform.OS === 'web' ? 'v2-soft' : undefined}
+              style={[
+                v2Text.sectionSerif,
+                {
+                  color: v2Colors.inkSoft,
+                  fontStyle: 'italic',
+                  fontWeight: '400',
+                  fontSize: 16,
+                  marginTop: 4,
+                },
+              ]}
+            >
+              a {personality} companion · {petAnimal}
+            </Text>
+          </View>
         </View>
 
         {/* ── VIDEO PORTRAIT ────────────────────── */}
         <View style={styles.videoFrame}>
-          <View style={styles.videoInner}>
-            <VideoView
-              player={player}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              nativeControls={false}
+          {Platform.OS === 'web' ? (
+            // @ts-ignore — native HTML video for web
+            <video
+              src={typeof videoSource === 'number' ? undefined : videoSource}
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover', display: 'block' }}
             />
-          </View>
+          ) : (
+            <View style={styles.videoInner} />
+          )}
           {/* Bottom band */}
           <View style={styles.videoBand}>
             <Text style={[v2Text.field, { color: v2Colors.paperBright, fontSize: 9 }]}>
@@ -173,9 +186,15 @@ export default function V2Pet() {
           />
         </View>
 
-        {/* ── QUOTE ──────────────────────────────── */}
-        <View style={styles.quoteCard}>
-          <FieldLabel index="DIALOGUE">Current transmission</FieldLabel>
+        {/* ── QUOTE (IndexCard format) ────────────── */}
+        <IndexCard
+          style={styles.bondCard}
+          tint={v2Colors.paperBright}
+          accent={v2Colors.coral}
+        >
+          <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
+            {(petName || 'BESTIE').toUpperCase()} SAYS
+          </Text>
           <Text
             style={[
               v2Text.quote,
@@ -186,260 +205,28 @@ export default function V2Pet() {
             {quote}
             <Text style={{ color: v2Colors.coral, fontSize: 32, lineHeight: 24 }}>"</Text>
           </Text>
-          <Text style={[v2Text.serial, { color: v2Colors.stamp, marginTop: 10 }]}>
-            RECORDED · MOOD: {String(mood).toUpperCase()}
-          </Text>
-        </View>
-
-        {/* ── BOND METER ─────────────────────────── */}
-        <FieldLabel index="N°01" style={{ marginTop: v2Space.xl }}>
-          The bond
-        </FieldLabel>
-
-        <IndexCard
-          style={styles.bondCard}
-          tint={v2Colors.mossWash}
-          accent={v2Colors.moss}
-          serial={`LV.${level}`}
-        >
-          <View style={styles.bondHeader}>
-            <View>
-              <Text style={[v2Text.serial, { color: v2Colors.mossInk }]}>
-                TIER {bondTier} · {tierName.toUpperCase()}
-              </Text>
-              <Text
-                style={[
-                  v2Text.sectionSerif,
-                  {
-                    color: v2Colors.mossInk,
-                    fontStyle: 'italic',
-                    marginTop: 2,
-                  },
-                ]}
-              >
-                An understanding, forming.
-              </Text>
-            </View>
-            <Text
-              style={[
-                v2Text.displaySerif,
-                { color: v2Colors.moss, fontSize: 32 },
-              ]}
-            >
-              {bondXP}
-              <Text style={{ fontSize: 16, color: v2Colors.mossInk }}>
-                /{bondMax}
-              </Text>
-            </Text>
-          </View>
-
-          <View style={styles.bondTrack}>
-            {Array.from({ length: 30 }).map((_, i) => {
-              const filled = i / 30 < bondRatio;
-              return (
-                <View
-                  key={i}
-                  style={[
-                    styles.bondTick,
-                    {
-                      backgroundColor: filled ? v2Colors.moss : v2Colors.rule,
-                      height: filled ? 16 : 10,
-                    },
-                  ]}
-                />
-              );
-            })}
-          </View>
         </IndexCard>
 
-        {/* ── PERSONALITY ─────────────────────────── */}
-        <FieldLabel index="N°02" style={{ marginTop: v2Space.xl }}>
-          Temperament chip
-        </FieldLabel>
-        <View style={styles.personalityGrid}>
-          {PERSONALITIES.map((p) => {
-            const active = personality === p.type;
-            const accent = PERSONALITY_ACCENT[p.type as Personality];
-            return (
-              <Pressable
-                key={p.type}
-                onPress={() => setPersonality(p.type)}
-                style={({ pressed }) => [
-                  styles.persoCard,
-                  {
-                    borderColor: active ? v2Colors.ink : v2Colors.paperShadow,
-                    backgroundColor: active ? v2Colors.paperBright : v2Colors.paper,
-                    transform: pressed ? [{ translateY: 2 }] : [{ translateY: 0 }],
-                    shadowOffset: {
-                      width: active ? 3 : 0,
-                      height: active ? 3 : 0,
-                    },
-                    shadowColor: v2Colors.ink,
-                    shadowOpacity: 1,
-                    shadowRadius: 0,
-                  },
-                ]}
-              >
-                <View style={[styles.persoAccent, { backgroundColor: accent }]} />
-                <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>
-                  TEMPERAMENT · {String(p.type).slice(0, 3).toUpperCase()}
-                </Text>
-                <Text
-                  style={[
-                    v2Text.cardSerif,
-                    {
-                      color: v2Colors.ink,
-                      marginTop: 6,
-                      fontStyle: 'italic',
-                    },
-                  ]}
-                >
-                  {p.label}
-                </Text>
-                <Text
-                  style={[
-                    v2Text.bodySmall,
-                    { color: v2Colors.inkMuted, marginTop: 4 },
-                  ]}
-                >
-                  {p.description}
-                </Text>
-                {active && (
-                  <Text
-                    style={[
-                      v2Text.serial,
-                      { color: accent, marginTop: 8, fontWeight: '700' },
-                    ]}
-                  >
-                    ✓ ACTIVE
-                  </Text>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* ── SPECIES PICKER ─────────────────────── */}
-        <FieldLabel index="N°03" style={{ marginTop: v2Space.xl }}>
-          Species registry
-        </FieldLabel>
-        <View style={styles.speciesRow}>
-          {PET_ANIMALS.map((a) => {
-            const active = petAnimal === a.type;
-            return (
-              <Pressable
-                key={a.type}
-                onPress={() => setPetAnimal(a.type as PetAnimal)}
-                style={({ pressed }) => [
-                  styles.speciesCard,
-                  {
-                    borderColor: active ? v2Colors.ink : v2Colors.paperShadow,
-                    backgroundColor: active
-                      ? v2Colors.coralWash
-                      : v2Colors.paperBright,
-                    transform: pressed
-                      ? [{ translateY: 1 }]
-                      : [{ translateY: 0 }],
-                  },
-                ]}
-              >
-                {a.type === 'penguin' ? (
-                  <Image
-                    source={require('../../../assets/images/penguin-profile.png')}
-                    style={styles.speciesImg}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Text style={styles.speciesEmoji}>{a.emoji}</Text>
-                )}
-                <Text
-                  style={[
-                    v2Text.serial,
-                    {
-                      color: active ? v2Colors.coralInk : v2Colors.stamp,
-                      textAlign: 'center',
-                      marginTop: 4,
-                    },
-                  ]}
-                >
-                  {a.label.toUpperCase()}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* ── INVENTORY ──────────────────────────── */}
-        <FieldLabel index="N°04" style={{ marginTop: v2Space.xl }}>
-          Collected ornaments
-        </FieldLabel>
-        <View style={styles.invGrid}>
-          {INVENTORY.map((item) => {
-            const unlocked = level >= item.unlockAt;
-            return (
-              <IndexCard
-                key={item.id}
-                style={styles.invCard}
-                tint={unlocked ? v2Colors.paperBright : v2Colors.paperDeep}
-                accent={unlocked ? v2Colors.coral : v2Colors.rule}
-                serial={`ORN-${item.id.toUpperCase().slice(0, 3)}`}
-              >
-                <View style={styles.invHead}>
-                  <Text
-                    style={[
-                      styles.invGlyph,
-                      { color: unlocked ? v2Colors.ink : v2Colors.rule },
-                    ]}
-                  >
-                    {unlocked ? item.glyph : '×'}
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    v2Text.cardSerif,
-                    {
-                      color: unlocked ? v2Colors.ink : v2Colors.inkMuted,
-                      fontStyle: 'italic',
-                      marginTop: 6,
-                    },
-                  ]}
-                >
-                  {item.name}
-                </Text>
-                <Text
-                  style={[
-                    v2Text.bodySmall,
-                    { color: v2Colors.inkMuted, marginTop: 2 },
-                  ]}
-                >
-                  {unlocked ? item.sub : `Unlocks at Lv. ${item.unlockAt}`}
-                </Text>
-              </IndexCard>
-            );
-          })}
-        </View>
-
         {/* ── CTA ────────────────────────────────── */}
-        <View style={{ marginTop: v2Space.xl }}>
-          <InkButton
-            label="Begin a session"
-            sublabel="together, in focus"
-            variant="ink"
-            onPress={() => router.push('/v2/check-in')}
-            full
-          />
-        </View>
-
-        <View style={styles.foot}>
-          <Asterism char="✦ ❋ ✦" color={v2Colors.stamp} size={10} />
-          <Text
-            style={[
-              v2Text.serial,
-              { color: v2Colors.stamp, textAlign: 'center', marginTop: 4 },
-            ]}
+        <View style={styles.ctaRow}>
+          <View style={{ flex: 1 }}>
+            <InkButton
+              label="New session"
+              variant="ink"
+              onPress={() => router.push('/v2/check-in')}
+              full
+            />
+          </View>
+          <Pressable
+            onPress={() => {
+              startSession('classic', 25 * 60, 5 * 60, 4);
+              router.push('/v2/session');
+            }}
+            style={styles.quickBtn}
           >
-            Catalogued with care · Same Bestie, vol. II
-          </Text>
+            <Text style={{ fontSize: 18 }}>⚡</Text>
+            <Text style={[v2Text.serial, { color: v2Colors.paperBright, fontSize: 7 }]}>25 MIN</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </PaperLayer>
@@ -448,6 +235,26 @@ export default function V2Pet() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
+  ctaRow: {
+    flexDirection: 'row',
+    gap: v2Space.sm,
+    marginTop: v2Space.xl,
+    alignItems: 'stretch',
+  },
+  quickBtn: {
+    width: 56,
+    backgroundColor: v2Colors.coral,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: v2Colors.coralInk,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    shadowColor: v2Colors.ink,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
   container: { paddingHorizontal: v2Space.lg },
 
   masthead: {
@@ -460,12 +267,26 @@ const styles = StyleSheet.create({
   },
 
   hero: {
-    marginTop: v2Space.md,
-    marginBottom: v2Space.lg,
+    marginTop: v2Space.sm,
+    marginBottom: v2Space.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: v2Space.md,
+  },
+  profilePic: {
+    width: 80,
+    height: 80,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: v2Colors.ink,
+  },
+  heroText: {
+    flex: 1,
   },
 
   videoFrame: {
-    marginVertical: v2Space.md,
+    marginTop: 0,
+    marginBottom: v2Space.sm,
     borderWidth: 1.5,
     borderColor: v2Colors.ink,
     borderRadius: 4,
@@ -505,6 +326,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
+    height: 150,
+    justifyContent: 'center',
   },
   bondHeader: {
     flexDirection: 'row',

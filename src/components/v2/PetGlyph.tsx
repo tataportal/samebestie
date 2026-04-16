@@ -4,11 +4,11 @@ import { v2Colors, v2Text } from '../../theme/v2';
 import { PetAnimal } from '../../types';
 
 // Real profile image — extracted from the penguin video
-const PROFILE_IMG = require('../../../assets/images/penguin-profile.png');
+const PROFILE_IMG = require('../../../assets/images/penguin-avatar.png');
 
-// Fallback emojis for non-penguin species
+// Emojis for ALL species (used when useImage=false)
 const EMOJI: Record<PetAnimal, string> = {
-  penguin: '',
+  penguin: '🐧',
   cat: '🐱',
   fox: '🦊',
   frog: '🐸',
@@ -17,24 +17,29 @@ const EMOJI: Record<PetAnimal, string> = {
 
 /**
  * Pet portrait framed as a library catalog thumbnail.
- * Uses the real penguin profile image; falls back to emoji for other species.
+ *
+ * Two modes:
+ *  - useImage=false (default): emoji glyph — for initial screens, home, onboarding
+ *  - useImage=true: real penguin profile pic — for settings, species selector, summary
  */
 export function PetGlyph({
   animal = 'penguin',
   size = 200,
   label,
   serial,
+  useImage = false,
 }: {
   animal?: PetAnimal;
   size?: number;
   label?: string;
   serial?: string;
+  useImage?: boolean;
 }) {
-  const usesImage = animal === 'penguin';
+  const showRealImage = useImage && animal === 'penguin';
 
   return (
     <View style={[styles.frame, { width: size, height: size }]}>
-      {usesImage ? (
+      {showRealImage ? (
         <Image
           source={PROFILE_IMG}
           style={[StyleSheet.absoluteFill, { borderRadius: 2 }]}
@@ -54,13 +59,35 @@ export function PetGlyph({
         </>
       )}
 
-      {/* corner marks — on top of image */}
-      <Text style={[styles.cornerMark, { top: 8, left: 10 }]}>§</Text>
-      <Text style={[styles.cornerMark, { top: 8, right: 10 }]}>§</Text>
+      {/* corner marks */}
+      <Text
+        style={[
+          styles.cornerMark,
+          { top: 8, left: 10 },
+          showRealImage && styles.cornerMarkLight,
+        ]}
+      >
+        §
+      </Text>
+      <Text
+        style={[
+          styles.cornerMark,
+          { top: 8, right: 10 },
+          showRealImage && styles.cornerMarkLight,
+        ]}
+      >
+        §
+      </Text>
+      {!showRealImage && (
+        <>
+          <Text style={[styles.cornerMark, { bottom: 28, left: 10 }]}>§</Text>
+          <Text style={[styles.cornerMark, { bottom: 28, right: 10 }]}>§</Text>
+        </>
+      )}
 
       {/* bottom serial band */}
       {(label || serial) && (
-        <View style={styles.band}>
+        <View style={[styles.band, showRealImage && styles.bandOverImage]}>
           {label && (
             <Text style={[v2Text.field, { color: v2Colors.paperBright, fontSize: 9 }]}>
               {label}
@@ -106,10 +133,12 @@ const styles = StyleSheet.create({
   },
   cornerMark: {
     position: 'absolute',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
-    fontFamily:
-      'Fraunces, "Hoefler Text", Garamond, Georgia, serif',
+    color: v2Colors.stamp,
+    fontSize: 12,
+    fontFamily: 'Fraunces, "Hoefler Text", Garamond, Georgia, serif',
+  },
+  cornerMarkLight: {
+    color: 'rgba(255,255,255,0.55)',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -119,11 +148,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(20,32,58,0.85)',
+    backgroundColor: v2Colors.ink,
     paddingVertical: 4,
     paddingHorizontal: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  bandOverImage: {
+    backgroundColor: 'rgba(20,32,58,0.82)',
   },
 });

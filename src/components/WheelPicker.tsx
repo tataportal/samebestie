@@ -77,11 +77,7 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({
                     fontSize,
                     color: isSelected ? accentColor : colors.onSurface,
                     fontFamily: isSelected ? fonts.headlineBold : fonts.body,
-                    ...(isSelected && {
-                      textShadowColor: accentColor,
-                      textShadowOffset: { width: 0, height: 0 },
-                      textShadowRadius: 10,
-                    }),
+                    // no text shadow in V2
                   },
                 ]}
               >

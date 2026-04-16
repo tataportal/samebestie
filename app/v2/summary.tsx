@@ -358,6 +358,7 @@ export default function V2Summary() {
               size={90}
               label={(petName || 'BESTIE').toUpperCase()}
               serial={String(petMoodResult).toUpperCase()}
+              useImage
             />
             <View style={{ flex: 1, marginLeft: v2Space.md }}>
               <Text style={[v2Text.serial, { color: v2Colors.stamp }]}>

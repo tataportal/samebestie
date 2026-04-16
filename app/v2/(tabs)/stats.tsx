@@ -21,7 +21,14 @@ import { useUserStore } from '../../../src/store/useUserStore';
 import { useHistoryStore } from '../../../src/store/useHistoryStore';
 import { usePetStore } from '../../../src/store/usePetStore';
 import { getLevelFromXP } from '../../../src/utils/levelSystem';
+import { getObservations, getArchivistNote } from '../../../src/utils/analytics';
 import { v2Colors, v2Text, v2Space } from '../../../src/theme/v2';
+
+const OBS_COLOR: Record<'coral' | 'moss' | 'amber', string> = {
+  coral: v2Colors.coral,
+  moss: v2Colors.moss,
+  amber: v2Colors.amber,
+};
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const DAY_LONG = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -50,11 +57,13 @@ export default function V2Stats() {
   const deepWorkRate = useHistoryStore((s) => s.getCompletionRate('hyper'));
   const petName = usePetStore((s) => s.petName);
 
-  // Use some sample data if the user has no history, so the page is viewable
-  const demoXP = weeklyXP.every((v) => v === 0)
-    ? [120, 80, 210, 160, 95, 240, 175]
-    : weeklyXP;
-  const maxXP = Math.max(...demoXP, 1);
+  // Real data only
+  const hasData = sessions.length > 0;
+  const maxXP = Math.max(...weeklyXP, 1);
+
+  // Real analytics
+  const observations = getObservations(sessions);
+  const archivistNote = getArchivistNote(sessions);
 
   return (
     <PaperLayer>
@@ -140,7 +149,7 @@ export default function V2Stats() {
 
             {/* Bars */}
             <View style={styles.barsGrid}>
-              {demoXP.map((val, i) => {
+              {weeklyXP.map((val, i) => {
                 const ratio = val / maxXP;
                 const isMax = val === maxXP;
                 return (
@@ -199,7 +208,7 @@ export default function V2Stats() {
               7 DAYS · XP PER DAY
             </Text>
             <Text style={[v2Text.serial, { color: v2Colors.moss }]}>
-              TOTAL: {demoXP.reduce((a, b) => a + b, 0)} XP
+              TOTAL: {weeklyXP.reduce((a, b) => a + b, 0)} XP
             </Text>
           </View>
         </IndexCard>
@@ -231,7 +240,7 @@ export default function V2Stats() {
                 },
               ]}
             >
-              {tinyStartRate || 67}
+              {hasData ? tinyStartRate : '—'}
               <Text style={{ fontSize: 28, color: v2Colors.amber }}>%</Text>
             </Text>
             <Text
@@ -266,7 +275,7 @@ export default function V2Stats() {
                 },
               ]}
             >
-              {deepWorkRate || 42}
+              {hasData ? deepWorkRate : '—'}
               <Text style={{ fontSize: 28, color: v2Colors.moss }}>%</Text>
             </Text>
             <Text
@@ -321,12 +330,9 @@ export default function V2Stats() {
               { color: v2Colors.ink, fontStyle: 'italic' },
             ]}
           >
-            <Text style={{ color: v2Colors.coral, fontSize: 38, lineHeight: 28 }}>“</Text>
-            Your attention arrives earliest in the morning — a small
-            ceremonial hour between <Text style={{ fontStyle: 'normal', color: v2Colors.ink, fontWeight: '600' }}>9 and 11</Text>.
-            Consider this your natural study window. The afternoon is for
-            mending, not carving. Don't fight it.
-            <Text style={{ color: v2Colors.coral, fontSize: 38, lineHeight: 28 }}>”</Text>
+            <Text style={{ color: v2Colors.coral, fontSize: 38, lineHeight: 28 }}>"</Text>
+            {archivistNote}
+            <Text style={{ color: v2Colors.coral, fontSize: 38, lineHeight: 28 }}>"</Text>
           </Text>
 
           <View style={styles.letterFoot}>
@@ -353,83 +359,62 @@ export default function V2Stats() {
         </FieldLabel>
 
         <View style={styles.obsGrid}>
-          <IndexCard
-            style={styles.obsCard}
-            tint={v2Colors.paperBright}
-            serial="OBS-01"
-          >
-            <Text style={[v2Text.field, { color: v2Colors.coral }]}>
-              CAFFEINE PEAK
-            </Text>
-            <Text
-              style={[
-                v2Text.cardSerif,
-                { color: v2Colors.ink, marginTop: 6, fontStyle: 'italic' },
-              ]}
+          {observations.length === 0 ? (
+            <IndexCard
+              style={styles.obsCard}
+              tint={v2Colors.paperBright}
+              serial="—"
             >
-              9–11 AM, the hour of keenness.
-            </Text>
-            <Text
-              style={[
-                v2Text.bodySmall,
-                { color: v2Colors.inkMuted, marginTop: 8 },
-              ]}
-            >
-              Your best sessions cluster here. Honor it.
-            </Text>
-          </IndexCard>
-
-          <IndexCard
-            style={styles.obsCard}
-            tint={v2Colors.paperBright}
-            serial="OBS-02"
-          >
-            <Text style={[v2Text.field, { color: v2Colors.moss }]}>
-              3PM EBBING
-            </Text>
-            <Text
-              style={[
-                v2Text.cardSerif,
-                { color: v2Colors.ink, marginTop: 6, fontStyle: 'italic' },
-              ]}
-            >
-              A small tide, post-lunch.
-            </Text>
-            <Text
-              style={[
-                v2Text.bodySmall,
-                { color: v2Colors.inkMuted, marginTop: 8 },
-              ]}
-            >
-              Focus dips 40%. A Tiny Start is often enough.
-            </Text>
-          </IndexCard>
-
-          <IndexCard
-            style={styles.obsCard}
-            tint={v2Colors.paperBright}
-            serial="OBS-03"
-          >
-            <Text style={[v2Text.field, { color: v2Colors.amber }]}>
-              SATURDAY SURGE
-            </Text>
-            <Text
-              style={[
-                v2Text.cardSerif,
-                { color: v2Colors.ink, marginTop: 6, fontStyle: 'italic' },
-              ]}
-            >
-              Weekends hold a quiet fire.
-            </Text>
-            <Text
-              style={[
-                v2Text.bodySmall,
-                { color: v2Colors.inkMuted, marginTop: 8 },
-              ]}
-            >
-              Saturday XP beats weekday avg by 38%.
-            </Text>
-          </IndexCard>
+              <Text style={[v2Text.field, { color: v2Colors.stamp }]}>
+                NOT ENOUGH DATA
+              </Text>
+              <Text
+                style={[
+                  v2Text.cardSerif,
+                  { color: v2Colors.ink, marginTop: 6, fontStyle: 'italic' },
+                ]}
+              >
+                Patterns are still forming.
+              </Text>
+              <Text
+                style={[
+                  v2Text.bodySmall,
+                  { color: v2Colors.inkMuted, marginTop: 8 },
+                ]}
+              >
+                Complete a few more sessions and real observations will appear here.
+              </Text>
+            </IndexCard>
+          ) : (
+            observations.map((o, i) => (
+              <IndexCard
+                key={o.id}
+                style={styles.obsCard}
+                tint={v2Colors.paperBright}
+                serial={`OBS-${String(i + 1).padStart(2, '0')}`}
+              >
+                <Text style={[v2Text.field, { color: OBS_COLOR[o.color] }]}>
+                  {o.title}
+                </Text>
+                <Text
+                  style={[
+                    v2Text.cardSerif,
+                    { color: v2Colors.ink, marginTop: 6, fontStyle: 'italic' },
+                  ]}
+                >
+                  {o.subtitle}
+                </Text>
+                <Text
+                  style={[
+                    v2Text.bodySmall,
+                    { color: v2Colors.inkMuted, marginTop: 8 },
+                  ]}
+                >
+                  {o.description}
+                </Text>
+              </IndexCard>
+            ))
+          )}
         </View>
 
         {/* ── FOOTER ─────────────────────────────── */}

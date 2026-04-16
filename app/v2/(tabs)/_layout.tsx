@@ -3,10 +3,9 @@ import { PaperTabBar, PaperTab } from '../../../src/components/v2/PaperTabBar';
 import { v2Colors } from '../../../src/theme/v2';
 
 const TABS: PaperTab[] = [
-  { key: 'index',    label: 'FOCUS',   glyph: 'F', accent: v2Colors.coral  },
-  { key: 'stats',    label: 'RECORDS', glyph: 'R', accent: v2Colors.moss   },
-  { key: 'pet',      label: 'BESTIE',  glyph: 'B', accent: v2Colors.amber  },
-  { key: 'settings', label: 'GEAR',    glyph: 'G', accent: v2Colors.sky    },
+  { key: 'pet',      label: 'Bestie',   glyph: '🐧', accent: v2Colors.coral  },
+  { key: 'stats',    label: 'Records',  glyph: '📊', accent: v2Colors.moss   },
+  { key: 'settings', label: 'Settings', glyph: '⚙', accent: v2Colors.sky    },
 ];
 
 export default function V2TabLayout() {
@@ -36,9 +35,8 @@ export default function V2TabLayout() {
         );
       }}
     >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="stats" />
       <Tabs.Screen name="pet" />
+      <Tabs.Screen name="stats" />
       <Tabs.Screen name="settings" />
     </Tabs>
   );

@@ -162,7 +162,7 @@ export function Stamp({
         <Text
           style={[
             v2Text.field,
-            { color, fontSize: 10, letterSpacing: 1.5, textAlign: 'center' },
+            { color, fontSize: size * 0.09, letterSpacing: size * 0.015, textAlign: 'center' },
           ]}
         >
           {label}
@@ -171,7 +171,7 @@ export function Stamp({
           <Text
             style={[
               v2Text.serial,
-              { color, fontSize: 8, marginTop: 2, letterSpacing: 1 },
+              { color, fontSize: size * 0.065, marginTop: 2, letterSpacing: size * 0.01 },
             ]}
           >
             {sub}
