@@ -9,9 +9,12 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 import './style.css';
 import {mountFocus} from './focus.js';
+import {mountClocks} from './world-clocks.js';
+import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
 import {CozyBokehPass,bokehFragment} from './bokeh.js';
 const $=id=>document.getElementById(id);
+mountClocks();const alerts=mountAlerts();
 const scene=new THREE.Scene();scene.background=new THREE.Color('#463327');
 const camera=new THREE.PerspectiveCamera(39.6,1,.1,40);camera.position.set(-1.85,1.95,5.6);camera.lookAt(-1.85,1.95,2.34);
 const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
@@ -58,7 +61,7 @@ try{
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
  renderer.shadowMap.needsUpdate=true;ready=true;$('loading').classList.add('ready');
 }catch(e){console.error(e);$('loading').textContent='No se pudo cargar el cuarto. Recarga para intentarlo de nuevo.'}
-const focusSession=mountFocus();
+const focusSession=mountFocus({onTurn:alerts.onTurn,onStart:alerts.unlock});
 const previewButtons=[...document.querySelectorAll('[data-study-action]')];
 for(const button of previewButtons){
  button.disabled=!ready;
