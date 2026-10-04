@@ -1,0 +1,72 @@
+{
+  "source": "chatito-study-desk.blend",
+  "source_mesh_objects": 1913,
+  "batches": [
+    {
+      "name": "Web_Chatito_Head",
+      "triangles": 191180
+    },
+    {
+      "name": "Web_Room",
+      "triangles": 956388
+    },
+    {
+      "name": "Web_Room_Glow",
+      "triangles": 1992
+    },
+    {
+      "name": "Web_Bao",
+      "triangles": 88724
+    },
+    {
+      "name": "Web_FarGround",
+      "triangles": 12
+    },
+    {
+      "name": "Web_ReadingPage",
+      "triangles": 672
+    },
+    {
+      "name": "Web_FarGround_Glow",
+      "triangles": 12
+    },
+    {
+      "name": "Web_Chatito_Body",
+      "triangles": 151800
+    },
+    {
+      "name": "Web_Chatito_Scarf",
+      "triangles": 7656
+    },
+    {
+      "name": "Web_Chatito_Arm.L",
+      "triangles": 25212
+    },
+    {
+      "name": "Web_Chatito_Leg.L",
+      "triangles": 24948
+    },
+    {
+      "name": "Web_Chatito_Arm.R",
+      "triangles": 25212
+    },
+    {
+      "name": "Web_Chatito_Leg.R",
+      "triangles": 24948
+    }
+  ],
+  "camera": {
+    "position": [
+      -1.85,
+      1.95,
+      5.6
+    ],
+    "target": [
+      -1.85,
+      1.95,
+      2.34
+    ],
+    "lens_mm": 50
+  },
+  "note": "Static pose plus separate body parts for procedural idle. Six emotional animations are not included."
+}

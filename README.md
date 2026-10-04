@@ -1,3 +1,5 @@
+> **Current web experience:** [Open Same, Bestie](https://tataportal.github.io/samebestie/). The Three.js scene and pomodoro live in [`web-scene/`](web-scene/). The Expo project below is retained as the earlier implementation.
+
 # Same Bestie
 
 **A gentle focus companion designed to make showing up feel personal.**
