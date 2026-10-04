@@ -54,7 +54,7 @@ try{
  const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=sealed-3`);
  gltf.scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;const m=o.material;m.side=THREE.DoubleSide;m.roughness=.88;m.metalness=0;if(o.name.includes('Glow')){m.emissive.set('#ff9a38');m.emissiveIntensity=2;m.color.set('#ffb760')}if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
  scene.add(gltf.scene);
- for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);if(o.name.includes('Arm'))p.position.x+=o.name.includes('L')?-.41:.41;scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
+ for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
  renderer.shadowMap.needsUpdate=true;ready=true;$('loading').classList.add('ready');
 }catch(e){console.error(e);$('loading').textContent='No se pudo cargar el cuarto. Recarga para intentarlo de nuevo.'}

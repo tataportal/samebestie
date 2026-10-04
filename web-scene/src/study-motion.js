@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 const clamp=THREE.MathUtils.clamp;
 const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
-const mix=THREE.MathUtils.lerp;
 const v=(x,y,z)=>new THREE.Vector3(x,y,z);
 const CYCLE=30;
 export function studyBeat(time){
