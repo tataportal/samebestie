@@ -1,3 +1,5 @@
 node_modules/
 dist/
 source-assets/
+verification/
+__pycache__/

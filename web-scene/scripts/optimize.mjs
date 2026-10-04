@@ -1,0 +1,14 @@
+import {NodeIO} from '@gltf-transform/core';
+import {ALL_EXTENSIONS} from '@gltf-transform/extensions';
+import {dedup,prune,weld,meshopt,simplify} from '@gltf-transform/functions';
+import {MeshoptEncoder,MeshoptSimplifier} from 'meshoptimizer';
+import {stat,writeFile,mkdir} from 'node:fs/promises';
+await MeshoptEncoder.ready;await MeshoptSimplifier.ready;
+const io=new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.encoder':MeshoptEncoder});
+const doc=await io.read('source-assets/cozy-room-raw.glb');
+await doc.transform(dedup(),weld({tolerance:.00001}),simplify({simplifier:MeshoptSimplifier,ratio:.45,error:.0005,lockBorder:true}),prune(),meshopt({encoder:MeshoptEncoder,level:'high',quantizePosition:16}));
+await io.write('public/models/cozy-room.glb',doc);
+const bytes=(await stat('public/models/cozy-room.glb')).size;
+await mkdir('verification',{recursive:true});
+await writeFile('verification/asset.json',JSON.stringify({bytes,meshes:doc.getRoot().listMeshes().length,materials:doc.getRoot().listMaterials().length},null,2));
+console.log('OPTIMIZED',bytes);

@@ -1,10 +1,34 @@
 {
   "source": "chatito-study-desk.blend",
-  "source_mesh_objects": 1913,
+  "source_mesh_objects": 1920,
   "batches": [
     {
       "name": "Web_Chatito_Head",
-      "triangles": 191180
+      "triangles": 218076
+    },
+    {
+      "name": "Web_Chatito_Arm.L",
+      "triangles": 28936
+    },
+    {
+      "name": "Web_Chatito_Arm.R",
+      "triangles": 28936
+    },
+    {
+      "name": "Web_Chatito_Body",
+      "triangles": 173904
+    },
+    {
+      "name": "Web_Chatito_Leg.L",
+      "triangles": 28312
+    },
+    {
+      "name": "Web_Chatito_Leg.R",
+      "triangles": 28312
+    },
+    {
+      "name": "Web_Chatito_Scarf",
+      "triangles": 8368
     },
     {
       "name": "Web_Room",
@@ -29,30 +53,6 @@
     {
       "name": "Web_FarGround_Glow",
       "triangles": 12
-    },
-    {
-      "name": "Web_Chatito_Body",
-      "triangles": 151800
-    },
-    {
-      "name": "Web_Chatito_Scarf",
-      "triangles": 7656
-    },
-    {
-      "name": "Web_Chatito_Arm.L",
-      "triangles": 25212
-    },
-    {
-      "name": "Web_Chatito_Leg.L",
-      "triangles": 24948
-    },
-    {
-      "name": "Web_Chatito_Arm.R",
-      "triangles": 25212
-    },
-    {
-      "name": "Web_Chatito_Leg.R",
-      "triangles": 24948
     }
   ],
   "camera": {

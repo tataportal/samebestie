@@ -7,7 +7,6 @@ import {BokehPass} from 'three/addons/postprocessing/BokehPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
-import {SSAOPass} from 'three/addons/postprocessing/SSAOPass.js';
 import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 import './style.css';
 import {mountFocus} from './focus.js';
@@ -29,7 +28,9 @@ const hdrTarget=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,sample
 const composer=new EffectComposer(renderer,hdrTarget);
 for(const rt of [composer.renderTarget1,composer.renderTarget2]){rt.texture.generateMipmaps=true;rt.texture.minFilter=THREE.LinearMipmapLinearFilter;}
 const renderPass=new RenderPass(scene,camera);composer.addPass(renderPass);
-const ao=new SSAOPass(scene,camera,800,800,12);ao.kernelRadius=.10;ao.minDistance=.0005;ao.maxDistance=.025;composer.addPass(ao);
+// Dense voxel grooves already provide relief. Screen-space AO darkens the face
+// independently of receiveShadow and produces unstable bands during breathing.
+// Keep the room's real light shadows; quality changes resolution only.
 const dof=new BokehPass(scene,camera,{focus:3.26,aperture:.006,maxblur:.026});dof.materialBokeh.fragmentShader=bokehFragment;dof.materialBokeh.needsUpdate=true;composer.addPass(dof);
 const bloom=new UnrealBloomPass(new THREE.Vector2(800,800),.28,.45,1.05);composer.addPass(bloom);
 composer.addPass(new OutputPass());
@@ -40,7 +41,7 @@ const approvedLook={warmth:1.05,bokeh:.013,bloom:.3,grain:.01,quality:'low'};
 let settings={...approvedLook};
 try{if(localStorage.getItem('bestie-look-version')==='2')settings={...settings,...JSON.parse(localStorage.getItem('bestie-look')||'{}')};else{localStorage.setItem('bestie-look',JSON.stringify(settings));localStorage.setItem('bestie-look-version','2')}}catch{}
 function resize(){const w=innerWidth,h=innerHeight;camera.aspect=w/h;camera.fov=THREE.MathUtils.radToDeg(2*Math.atan(.36/Math.max(.76,Math.min(1,w/h))));camera.updateProjectionMatrix();const scale=Math.min(1,({low:1050,balanced:1400,high:1800}[settings.quality]||1050)/Math.max(w,h));renderer.setSize(w,h);composer.setSize(Math.round(w*scale),Math.round(h*scale));antialias.uniforms.resolution.value.set(1/Math.round(w*scale),1/Math.round(h*scale));renderer.domElement.style.width='100%';renderer.domElement.style.height='100%';}
-function applyLook(save=true){key.intensity=1.05*Number(settings.warmth);lamp.intensity=1.4*Number(settings.warmth);dof.uniforms.maxblur.value=Number(settings.bokeh);dof.enabled=Number(settings.bokeh)>.0001;bloom.strength=Number(settings.bloom);grain.uniforms.amount.value=Number(settings.grain);ao.enabled=settings.quality==='high';for(const id of ['warmth','bokeh','bloom','grain','quality'])$(id).value=settings[id];resize();if(save)try{localStorage.setItem('bestie-look',JSON.stringify(settings))}catch{}}
+function applyLook(save=true){key.intensity=1.05*Number(settings.warmth);lamp.intensity=1.4*Number(settings.warmth);dof.uniforms.maxblur.value=Number(settings.bokeh);dof.enabled=Number(settings.bokeh)>.0001;bloom.strength=Number(settings.bloom);grain.uniforms.amount.value=Number(settings.grain);for(const id of ['warmth','bokeh','bloom','grain','quality'])$(id).value=settings[id];resize();if(save)try{localStorage.setItem('bestie-look',JSON.stringify(settings))}catch{}}
 for(const id of ['warmth','bokeh','bloom','grain','quality'])$(id).addEventListener('input',()=>{settings[id]=$(id).value;applyLook()});
 $('settings-button').onclick=()=>{const open=$('settings').hidden;$('settings').hidden=!open;$('settings-button').setAttribute('aria-expanded',String(open))};
 $('reset-look').onclick=()=>{settings={...approvedLook};applyLook()};
@@ -50,7 +51,7 @@ window.addEventListener('resize',resize);applyLook(false);
 const companions=[],pageMeshes=[];let pose=[];
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 try{
- const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=focus-2`);
+ const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=sealed-3`);
  gltf.scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;const m=o.material;m.side=THREE.DoubleSide;m.roughness=.88;m.metalness=0;if(o.name.includes('Glow')){m.emissive.set('#ff9a38');m.emissiveIntensity=2;m.color.set('#ffb760')}if(o.name.includes('Bao'))companions.push(o);if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
  scene.add(gltf.scene);
  for(const {o} of hero){const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);if(o.name.includes('Arm'))p.position.x+=o.name.includes('L')?-.41:.41;scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}

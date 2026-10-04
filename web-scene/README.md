@@ -16,3 +16,15 @@ La compilación usa `/samebestie/` como base para GitHub Pages. El desarrollo lo
 Estudio: 5–120 minutos, pausas: 5–60, en pasos de 5; 1–12 rondas. Los controles viven en la barra inferior. La sesión conserva su estado local al recargar y recupera el tiempo transcurrido si la pestaña se suspende. Bao se oculta durante focus y Chatito adopta una postura animada de lectura.
 
 El GLB es una exportación optimizada del modelo Blender. Las fuentes de modelado se conservan en el workspace de diseño, fuera de este proyecto web. El motor corre como una primera implementación visual: faltan las seis actuaciones emocionales completas, paso de página, integración de los flujos anteriores, cuentas, sincronización y extensiones. Safari físico aún no está validado. No se garantiza el mismo rendimiento en todos los dispositivos.
+
+## Reexportar el modelo
+
+Desde este directorio, con Blender y el archivo fuente local:
+
+```sh
+blender --background --factory-startup --python scripts/export_scene.py -- /ruta/chatito-study-desk.blend
+node scripts/optimize.mjs
+npm test
+```
+
+La exportación añade una superficie continua detrás de los vóxeles biselados de Chatito, conservando sus colores y piezas animables. Evita los túneles que dejaban ver el fondo entre cubitos, especialmente en el plano central de la cámara frontal. `raycast-seam.mjs` comprueba el GLB comprimido en posturas frontal, respirando y leyendo. No se aplica SSAO sobre la escena: las sombras reales del cuarto permanecen, pero la calidad alta no agrega manchas sobre la cara.
