@@ -27,6 +27,6 @@ const existing=new Set(scene.children);const motion=createStudyMotion(scene,hero
 for(const action of ['reading','page-turn','pencil-play','writing','water']){
  motion.preview(action);for(let i=0;i<45;i++)motion.update(.1,{state:{started:false,complete:false,phase:'study'},focusing:false,revision:0},true);
  scene.traverse(o=>{if(o.isMesh&&(o.name.includes('Chatito')||o.name.includes('ReadingPage')))assert.equal(o.layers.mask,1<<FOREGROUND);});
- for(const name of ['Chatito study pencil','Chatito water cup'])scene.getObjectByName(name).traverse(o=>{if(o.isMesh)assert.equal(o.layers.mask,1<<FOREGROUND)});
+ for(const name of ['Chatito study pencil','Chatito water cup','Chatito working hourglass'])scene.getObjectByName(name).traverse(o=>{if(o.isMesh)assert.equal(o.layers.mask,1<<FOREGROUND)});
 }
 console.log(`PASS: ${probes.length} lamp/desk rays isolated from background, ${triangles} triangles preserved, animated foreground retained.`);

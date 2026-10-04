@@ -11,6 +11,7 @@ import {mountFocus} from './focus.js';
 import {mountClocks} from './world-clocks.js';
 import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
+import {removeStaticHourglass} from './hourglass.js';
 import {CozyBokehPass} from './bokeh.js';
 import {LayerRenderPass,partitionScene,markForeground,BACKGROUND,FOREGROUND} from './scene-layers.js';
 const $=id=>document.getElementById(id);
@@ -73,7 +74,7 @@ try{
  shader.vertexShader='varying float cozyWorldZ;\n'+shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\ncozyWorldZ=(modelMatrix*vec4(transformed,1.)).z;');
  shader.fragmentShader='uniform float frontLampStrength;uniform vec3 frontLampTint;varying float cozyWorldZ;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance*=mix(vec3(1.),frontLampTint*frontLampStrength,smoothstep(1.2,1.8,cozyWorldZ));');};
  }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
- scene.add(gltf.scene);partitionScene(scene);
+ scene.add(gltf.scene);removeStaticHourglass(gltf.scene);partitionScene(scene);
  for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
  const existing=new Set(scene.children);
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
@@ -100,7 +101,7 @@ function frame(now){
  for(const {p,name,y} of pose){
   const breath=motion?Math.sin(phaseTime*1.2)*.004:0;p.position.y=y+breath;
   p.rotation.x=0;p.rotation.y=0;p.position.x=-1.85;p.position.z=1.84;
-  if(name.includes('Head')){p.rotation.x=readBlend*.18+activity.writing*.04-activity.turning*.08-activity.drinking*.10;p.rotation.y=activity.headYaw;p.position.y+=activity.turning*.018;p.position.x-=activity.drinking*.05;p.position.z+=readBlend*.045-activity.turning*.10;}
+  if(name.includes('Head')){p.rotation.x=readBlend*.18+activity.writing*.04-activity.turning*.08-activity.drinking*.10+activity.flipping*.04;p.rotation.y=activity.headYaw;p.position.y+=activity.turning*.018;p.position.x-=activity.drinking*.05;p.position.z+=readBlend*.045-activity.turning*.10;}
  }
  // This camera is always the intimate focus view; Bao stays hidden.
  if(previousFocus!==focusSession.focusing){renderer.shadowMap.needsUpdate=true;previousFocus=focusSession.focusing;}

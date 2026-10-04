@@ -29,6 +29,7 @@ try{
  now=1500000;tick();assert.equal(alerts.length,4);assert.equal(alerts[3].complete,true);assert.match(turnNotice(alerts[3]).title,/lograste/);
  elements.get('reset').onclick();tick();assert.equal(alerts.length,4);
  elements.get('start').onclick();now+=10000;elements.get('start').onclick();const remaining=focus.state.remaining;now+=500000;tick();assert.equal(focus.state.remaining,remaining);assert.equal(alerts.length,4);
+ const activation=focus.state.activation;elements.get('start').onclick();assert.equal(focus.state.activation,activation+1);assert.equal(focus.state.actionStartedAt,now);assert.equal(focus.state.remaining,remaining,'Continuar does not reset minutes');
  const old=newSession({study:5,rest:5,rounds:1});Object.assign(old,{started:true,running:true,end:300000});saved=JSON.stringify(old);mountFocus({onTurn:()=>assert.fail('stale alarm on reload')});tick();
  assert.notEqual(phaseSignature({phase:'study',round:1,complete:false}),phaseSignature({phase:'study',round:2,complete:false}));
 }finally{Date.now=originalNow;globalThis.setInterval=originalInterval;delete globalThis.document;delete globalThis.localStorage;}

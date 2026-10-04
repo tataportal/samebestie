@@ -52,3 +52,11 @@ La escena se divide al cargar en fondo y primer plano. El GLB agrupa los element
 Orden: render del fondo sin elementos frontales → bokeh y luminosidad del fondo → render del primer plano con profundidad limpia → bloom → color, antialias, grano y viñeta. El desenfoque nunca recibe píxeles ni mipmaps de la lámpara o del personaje; ya no depende de rechazar sus bordes mediante un mapa de profundidad. Las sombras se actualizan con las dos capas presentes antes de los renders parciales. El rango de bokeh y las preferencias guardadas se conservan.
 
 Prueba sobre el GLB publicado: 12 rayos de lámpara/escritorio solo encuentran esas superficies en el primer plano; se conservan los 1,542,362 triángulos. Las cinco acciones mantienen al personaje y sus objetos fuera del fondo. Verificación visual con bokeh al máximo.
+
+### Reloj de arena vinculado al pomodoro
+
+El reloj estático se reemplaza por uno voxel articulado en la misma posición, apoyado en la alfombrilla. La cantidad de arena de cada cámara representa el tiempo restante del turno (estudio o pausa), conservando el volumen total. Se calcula desde la fecha de fin del pomodoro; no es un bucle independiente. Al pausar se detienen el giro y el chorro, y el avance se recupera al recargar.
+
+Al Empezar, al cambiar de turno y **cada vez que se pulsa Continuar**, Chatito alcanza el reloj, lo levanta, gira 180° y lo apoya antes de retomar su actividad. Continuar conserva los minutos restantes: reinicia únicamente el gesto. La activación y el tiempo del gesto se guardan con la sesión. Con movimiento desactivado la arena sigue indicando el tiempo y se omite el gesto. **Probar acciones → Voltear reloj** permite repetir la animación sin tocar el timer; la arena de esa vista previa avanza acelerada para inspeccionarla.
+
+Pruebas: mitad de turno de estudio/pausa, orientaciones alternadas, conservación de arena, pausa, reset, continuación sin reinicio, recarga a mitad de sesión y eliminación de las 184 caras triangulares del reloj antiguo. En navegador se comprobó Pausar a 24:53 → Continuar → nuevo giro con 24:51, sin volver a 25:00.

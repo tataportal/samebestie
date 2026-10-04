@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createHourglass} from './hourglass.js';
 
 const clamp=THREE.MathUtils.clamp;
 const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
@@ -75,6 +76,7 @@ export function aimFlipper(pivot,restGrip,target,shoulder,thickness=1){
 
 export function createStudyMotion(scene,hero,pageMeshes){
  const clock=new StudyClock();
+ const hourglass=createHourglass(scene);let flipping=false;
  let preview=null,previewTime=0,breakTime=0,cupLift=0,cupReach=0,restEngagement=0;
  const arms=[];
  for(const {o} of hero){
@@ -132,19 +134,20 @@ export function createStudyMotion(scene,hero,pageMeshes){
   return v(-2.265+along*.185,1.381+.003*Math.max(0,Math.sin(t*22)),2.52+line*.028+.003*Math.sin(t*25));
  };
  return {
-  get action(){return preview||studyBeat(clock.time).action},
-  preview(action){preview=action;previewTime=0;breakTime=0;},
+  get action(){return preview||(flipping?'hourglass':studyBeat(clock.time).action)},
+  preview(action){preview=action;previewTime=0;breakTime=0;hourglass.restartPreview();},
   clearPreview(){preview=null;previewTime=0;},
   update(dt,session,motion){
-   let beat=clock.update(dt,{focusing:session.focusing,running:session.reading,motion,revision:session.revision});
+   const state=session.state||{};
+   const timer=hourglass.update(dt,state,motion&&(!preview||preview==='hourglass'),preview==='hourglass');flipping=timer.flipping&&!preview||preview==='hourglass';
+   let beat=clock.update(dt,{focusing:session.focusing,running:session.reading&&!flipping,motion,revision:session.revision});
    if(preview&&motion)previewTime+=dt;
    if(preview==='reading')beat=studyBeat(previewTime%3.5);
    if(preview==='page-turn')beat=studyBeat(3.3+Math.min(previewTime,4.7));
    if(preview==='pencil-play')beat=studyBeat(previewTime<2?10+previewTime:12+(previewTime-2)%3.5);
    if(preview==='writing')beat=studyBeat(16+Math.min(previewTime,7.3));
-   const state=session.state||{};
-   const restActive=preview==='water'||(!preview&&(state.complete||(state.started&&state.phase==='rest')));
-   const studying=preview?preview!=='water':session.focusing;
+   const restActive=preview==='water'||(!preview&&!flipping&&(state.complete||(state.started&&state.phase==='rest')));
+   const studying=!flipping&&(preview?preview!=='water':session.focusing);
    const restRunning=preview==='water'||state.complete||state.running;
    if(!restActive)breakTime=0;
    else if(motion&&restRunning)breakTime+=dt;
@@ -186,21 +189,22 @@ export function createStudyMotion(scene,hero,pageMeshes){
    const left=restLeft.clone();
    (beat.cycle%2?right:left).lerp(edge,beat.reach*e);
    right.lerp(cup.localToWorld(v(-.113,0,0)),cupReach);
+   const timerReach=(!preview||preview==='hourglass')?timer.reach:0;left.lerp(timer.grip,timerReach);
    for(const arm of arms){
-    const engaged=Math.max(e,restEngagement);
+    const engaged=Math.max(e,restEngagement,timerReach);
     const shoulder=arm.shoulder.clone();shoulder.z+=.16*engaged;
     const rest=shoulder.clone().add(arm.restGrip);
     const target=rest.lerp(arm.side>0?left:right,engaged);
-    const gripAmount=arm.side<0?Math.max(hold,cupReach):beat.reach*e;
+    const gripAmount=arm.side<0?Math.max(hold,cupReach):Math.max(beat.reach*e,timerReach);
     aimFlipper(arm.pivot,arm.restGrip,target,shoulder,1-.27*gripAmount);
    }
    // Leave completed annotations on the paper until the next page turn.
    const visibleMarks=t>=17?Math.min(15,Math.floor(clamp((t-17)/6.1,0,1)*15)):(beat.cycle>0&&t<4?15:0);
    ink.visible=e>.95&&visibleMarks>0;
    for(let i=0;i<marks.length;i++)marks[i].visible=i<visibleMarks;
-   return {time:clock.time,engagement:e,turning:beat.reach*e,writing:beat.write*e,drinking:cupLift,
-    headYaw:e*(.045*Math.sin(beat.t*.8)+.07*beat.write)-.18*cupLift,
-    active:motion&&(!!preview||session.reading||(restActive&&restRunning&&breakTime<9))};
+   return {time:clock.time,engagement:e,turning:beat.reach*e,writing:beat.write*e,drinking:cupLift,flipping:timerReach,
+    headYaw:e*(.045*Math.sin(beat.t*.8)+.07*beat.write)-.18*cupLift+timer.headYaw*(preview&&preview!=='hourglass'?0:1),
+    active:motion&&(!!preview||flipping||session.reading||(restActive&&restRunning&&breakTime<9))};
   }
  };
 }
