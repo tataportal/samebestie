@@ -3,14 +3,13 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
-import {BokehPass} from 'three/addons/postprocessing/BokehPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 import './style.css';
 import {mountFocus} from './focus.js';
-import {bokehFragment} from './bokeh.js';
+import {CozyBokehPass,bokehFragment} from './bokeh.js';
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();scene.background=new THREE.Color('#463327');
 const camera=new THREE.PerspectiveCamera(39.6,1,.1,40);camera.position.set(-1.85,1.95,5.6);camera.lookAt(-1.85,1.95,2.34);
@@ -31,7 +30,7 @@ const renderPass=new RenderPass(scene,camera);composer.addPass(renderPass);
 // Dense voxel grooves already provide relief. Screen-space AO darkens the face
 // independently of receiveShadow and produces unstable bands during breathing.
 // Keep the room's real light shadows; quality changes resolution only.
-const dof=new BokehPass(scene,camera,{focus:3.26,aperture:.006,maxblur:.026});dof.uniforms.backgroundBrightness={value:.75};dof.materialBokeh.fragmentShader=bokehFragment;dof.materialBokeh.needsUpdate=true;composer.addPass(dof);
+const dof=new CozyBokehPass(scene,camera,{focus:3.26,aperture:.006,maxblur:.026});dof.uniforms.backgroundBrightness={value:.75};dof.materialBokeh.fragmentShader=bokehFragment;dof.materialBokeh.needsUpdate=true;composer.addPass(dof);
 const bloom=new UnrealBloomPass(new THREE.Vector2(800,800),.28,.45,1.05);composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const antialias=new ShaderPass(FXAAShader);composer.addPass(antialias);

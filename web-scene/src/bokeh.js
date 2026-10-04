@@ -1,3 +1,6 @@
+import {DoubleSide} from 'three';
+import {BokehPass} from 'three/addons/postprocessing/BokehPass.js';
+
 // Golden-angle disk sampling avoids the visible rings of the stock sparse kernel.
 // The depth rejection prevents background highlights bleeding over the face.
 // Explicit texture LOD is essential: implicit derivatives become discontinuous
@@ -33,3 +36,19 @@ void main(){
  }
  gl_FragColor=vec4(sum/max(weights,.001)*backgroundLight,1.);
 }`;
+
+// The colour scene uses two-sided voxel surfaces. The depth prepass must use
+// the same faces, and empty pixels must contain far depth, not the room colour.
+// Otherwise back-facing foliage/floor fragments are mistaken for foreground
+// and remain as sharp floating scraps inside the blurred background.
+export class CozyBokehPass extends BokehPass {
+ constructor(scene,camera,options){
+  super(scene,camera,options);
+  this._materialDepth.side=DoubleSide;
+ }
+ render(...args){
+  const background=this.scene.background;
+  this.scene.background=null;
+  try{super.render(...args);}finally{this.scene.background=background;}
+ }
+}
