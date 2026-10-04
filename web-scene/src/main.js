@@ -9,6 +9,7 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 import './style.css';
 import {mountFocus} from './focus.js';
+import {createStudyMotion} from './study-motion.js';
 import {CozyBokehPass,bokehFragment} from './bokeh.js';
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();scene.background=new THREE.Color('#463327');
@@ -35,7 +36,7 @@ const bloom=new UnrealBloomPass(new THREE.Vector2(800,800),.28,.45,1.05);compose
 composer.addPass(new OutputPass());
 const antialias=new ShaderPass(FXAAShader);composer.addPass(antialias);
 const grain=new ShaderPass({uniforms:{tDiffuse:{value:null},time:{value:0},amount:{value:.012}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform sampler2D tDiffuse;uniform float time;uniform float amount;varying vec2 vUv;float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+time*37.61)*43758.5453);}void main(){vec4 c=texture2D(tDiffuse,vUv);float l=dot(c.rgb,vec3(.2126,.7152,.0722));float n=(hash(gl_FragCoord.xy)+hash(gl_FragCoord.xy+17.3)-1.)*amount;float gate=.3+.7*sin(clamp(l,0.,1.)*3.14159);c.rgb+=n*gate;float vig=1.-.12*pow(length((vUv-.5)*1.3),2.);gl_FragColor=vec4(c.rgb*vig,c.a);}`});composer.addPass(grain);
-const reduced=matchMedia('(prefers-reduced-motion: reduce)');let motion=!reduced.matches,ready=false,hero=[],fps=0,frames=0,lastMeasure=performance.now(),lastDraw=0,phaseTime=0;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');let motion=!reduced.matches,ready=false,hero=[],fps=0,frames=0,lastMeasure=performance.now(),lastDraw=0,lastFrameTime=0,phaseTime=0;
 const approvedLook={warmth:1.05,background:.75,bokeh:.013,bloom:.3,grain:.01,quality:'low'};
 let settings={...approvedLook};
 try{if(localStorage.getItem('bestie-look-version')==='2')settings={...settings,...JSON.parse(localStorage.getItem('bestie-look')||'{}')};else{localStorage.setItem('bestie-look',JSON.stringify(settings));localStorage.setItem('bestie-look-version','2')}}catch{}
@@ -47,34 +48,41 @@ $('reset-look').onclick=()=>{settings={...approvedLook};applyLook()};
 function syncMotion(){$('motion').textContent=motion?'Pausar movimiento':'Activar movimiento';$('motion').setAttribute('aria-pressed',String(motion))}
 $('motion').onclick=()=>{motion=!motion;syncMotion()};reduced.addEventListener('change',e=>{motion=!e.matches;syncMotion()});syncMotion();
 window.addEventListener('resize',resize);applyLook(false);
-const companions=[],pageMeshes=[];let pose=[];
+const pageMeshes=[];let pose=[],studyMotion;
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 try{
  const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=sealed-3`);
- gltf.scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;const m=o.material;m.side=THREE.DoubleSide;m.roughness=.88;m.metalness=0;if(o.name.includes('Glow')){m.emissive.set('#ff9a38');m.emissiveIntensity=2;m.color.set('#ffb760')}if(o.name.includes('Bao'))companions.push(o);if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
+ gltf.scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;const m=o.material;m.side=THREE.DoubleSide;m.roughness=.88;m.metalness=0;if(o.name.includes('Glow')){m.emissive.set('#ff9a38');m.emissiveIntensity=2;m.color.set('#ffb760')}if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
  scene.add(gltf.scene);
- for(const {o} of hero){const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);if(o.name.includes('Arm'))p.position.x+=o.name.includes('L')?-.41:.41;scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
+ for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);if(o.name.includes('Arm'))p.position.x+=o.name.includes('L')?-.41:.41;scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
+ studyMotion=createStudyMotion(scene,hero,pageMeshes);
  renderer.shadowMap.needsUpdate=true;ready=true;$('loading').classList.add('ready');
 }catch(e){console.error(e);$('loading').textContent='No se pudo cargar el cuarto. Recarga para intentarlo de nuevo.'}
 const focusSession=mountFocus();
-document.addEventListener('visibilitychange',()=>{lastDraw=0});
+const previewButtons=[...document.querySelectorAll('[data-study-action]')];
+for(const button of previewButtons){
+ button.disabled=!ready;
+ button.onclick=()=>{studyMotion.preview(button.dataset.studyAction);for(const other of previewButtons)other.setAttribute('aria-pressed',String(other===button));$('resume-actions').hidden=false;};
+}
+$('resume-actions').onclick=()=>{studyMotion.clearPreview();for(const button of previewButtons)button.setAttribute('aria-pressed','false');$('resume-actions').hidden=true;};
+document.addEventListener('visibilitychange',()=>{lastDraw=0;lastFrameTime=0});
 // Pause hidden tabs and cap animated rendering at 30 fps for a study companion.
 renderer.info.autoReset=false;
-let readBlend=0,previousFocus=false;
+let readBlend=0,previousFocus=false,lastShadow=0;
 function frame(now){
  requestAnimationFrame(frame);if(document.hidden||!ready)return;
  const interval=1000/30,elapsed=now-lastDraw;if(elapsed<interval)return;
- const dt=lastDraw?Math.min(elapsed/1000,.1):0;lastDraw=now-(elapsed%interval);
+ const dt=lastFrameTime?Math.min((now-lastFrameTime)/1000,.1):0;lastFrameTime=now;lastDraw=now-(elapsed%interval);
  if(motion)phaseTime+=dt;
- readBlend=THREE.MathUtils.damp(readBlend,focusSession.reading?1:0,4,dt);
+ const activity=studyMotion.update(dt,focusSession,motion);readBlend=activity.engagement;
  for(const {p,name,y} of pose){
   const breath=motion?Math.sin(phaseTime*1.2)*.004:0;p.position.y=y+breath;
-  p.rotation.x=0;p.rotation.y=0;p.position.z=1.84;
-  if(name.includes('Head')){p.rotation.x=readBlend*(.22+(motion?Math.sin(phaseTime*.7)*.018:0));p.rotation.y=readBlend*(motion?Math.sin(phaseTime*.5)*.035:0);p.position.z+=readBlend*.045;}
-  if(name.includes('Arm')){p.rotation.x=readBlend*-.36;p.position.z+=readBlend*.08;}
+  p.rotation.x=0;p.rotation.y=0;p.position.x=-1.85;p.position.z=1.84;
+  if(name.includes('Head')){p.rotation.x=readBlend*.18+activity.writing*.04-activity.turning*.08-activity.drinking*.10;p.rotation.y=activity.headYaw;p.position.y+=activity.turning*.018;p.position.x-=activity.drinking*.05;p.position.z+=readBlend*.045-activity.turning*.10;}
  }
- for(const o of companions)o.visible=!focusSession.focusing;
+ // This camera is always the intimate focus view; Bao stays hidden.
  if(previousFocus!==focusSession.focusing){renderer.shadowMap.needsUpdate=true;previousFocus=focusSession.focusing;}
+ if(activity.active&&now-lastShadow>200){renderer.shadowMap.needsUpdate=true;lastShadow=now;}
  grain.uniforms.time.value=motion?Math.floor(phaseTime*24):0;
  renderer.info.reset();composer.render();frames++;if(now-lastMeasure>=1000){fps=frames*1000/(now-lastMeasure);frames=0;lastMeasure=now;}
 }
