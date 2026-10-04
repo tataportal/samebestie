@@ -44,3 +44,11 @@ Verificación: pruebas del límite de tres relojes, zonas inválidas, cambio de 
 ### Luz frontal, temperatura y viñeteado
 
 **Luz del frente** (antes Luz cálida) regula juntas la luz principal, la lámpara, el relleno y la luz ambiental que iluminan al personaje y la mesa. También atenúa la emisión visible de la lámpara; las luces decorativas del fondo conservan su brillo. La **Temperatura de luz** ofrece una gradación artística cálida/neutra/fría de 1800–9000 K, con 3200 K como aspecto original. Cambia el color de las luces y de la emisión de la lámpara, sin modificar el valor de intensidad. **Viñeteado** va de 0 (desactivado) a 0.9, con bordes suaves y centro despejado; se aplica a la escena, no a la interfaz. Los nuevos ajustes se guardan junto al ambiente existente sin borrar sus preferencias anteriores.
+
+### Composición de bokeh en dos capas
+
+La escena se divide al cargar en fondo y primer plano. El GLB agrupa los elementos estáticos en Room/Room_Glow: `scene-layers.js` separa sus triángulos por la zona del escritorio en coordenadas del mundo, conservando los atributos originales. Chatito, la página y los objetos de las animaciones se asignan explícitamente al primer plano.
+
+Orden: render del fondo sin elementos frontales → bokeh y luminosidad del fondo → render del primer plano con profundidad limpia → bloom → color, antialias, grano y viñeta. El desenfoque nunca recibe píxeles ni mipmaps de la lámpara o del personaje; ya no depende de rechazar sus bordes mediante un mapa de profundidad. Las sombras se actualizan con las dos capas presentes antes de los renders parciales. El rango de bokeh y las preferencias guardadas se conservan.
+
+Prueba sobre el GLB publicado: 12 rayos de lámpara/escritorio solo encuentran esas superficies en el primer plano; se conservan los 1,542,362 triángulos. Las cinco acciones mantienen al personaje y sus objetos fuera del fondo. Verificación visual con bokeh al máximo.

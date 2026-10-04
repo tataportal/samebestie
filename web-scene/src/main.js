@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
-import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
@@ -12,7 +11,8 @@ import {mountFocus} from './focus.js';
 import {mountClocks} from './world-clocks.js';
 import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
-import {CozyBokehPass,bokehFragment} from './bokeh.js';
+import {CozyBokehPass} from './bokeh.js';
+import {LayerRenderPass,partitionScene,markForeground,BACKGROUND,FOREGROUND} from './scene-layers.js';
 const $=id=>document.getElementById(id);
 mountClocks();const alerts=mountAlerts();
 const scene=new THREE.Scene();scene.background=new THREE.Color('#463327');
@@ -30,11 +30,11 @@ const backLight=new THREE.PointLight('#ffad5c',6,10,2);backLight.position.set(1.
 const hdrTarget=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:Math.min(4,renderer.capabilities.maxSamples)});
 const composer=new EffectComposer(renderer,hdrTarget);
 for(const rt of [composer.renderTarget1,composer.renderTarget2]){rt.texture.generateMipmaps=true;rt.texture.minFilter=THREE.LinearMipmapLinearFilter;}
-const renderPass=new RenderPass(scene,camera);composer.addPass(renderPass);
-// Dense voxel grooves already provide relief. Screen-space AO darkens the face
-// independently of receiveShadow and produces unstable bands during breathing.
-// Keep the room's real light shadows; quality changes resolution only.
-const dof=new CozyBokehPass(scene,camera,{focus:3.26,aperture:.006,maxblur:.026});dof.uniforms.backgroundBrightness={value:.75};dof.materialBokeh.fragmentShader=bokehFragment;dof.materialBokeh.needsUpdate=true;composer.addPass(dof);
+// Render and blur the room alone, then draw opaque foreground with its own
+// depth buffer. Bloom and film effects see the final composite exactly once.
+composer.addPass(new LayerRenderPass(scene,camera,BACKGROUND));
+const dof=new CozyBokehPass();composer.addPass(dof);
+composer.addPass(new LayerRenderPass(scene,camera,FOREGROUND));
 const bloom=new UnrealBloomPass(new THREE.Vector2(800,800),.28,.45,1.05);composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const antialias=new ShaderPass(FXAAShader);composer.addPass(antialias);
@@ -73,9 +73,11 @@ try{
  shader.vertexShader='varying float cozyWorldZ;\n'+shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\ncozyWorldZ=(modelMatrix*vec4(transformed,1.)).z;');
  shader.fragmentShader='uniform float frontLampStrength;uniform vec3 frontLampTint;varying float cozyWorldZ;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance*=mix(vec3(1.),frontLampTint*frontLampStrength,smoothstep(1.2,1.8,cozyWorldZ));');};
  }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
- scene.add(gltf.scene);
+ scene.add(gltf.scene);partitionScene(scene);
  for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
+ const existing=new Set(scene.children);
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
+ for(const child of scene.children)if(!existing.has(child))markForeground(child);
  renderer.shadowMap.needsUpdate=true;ready=true;$('loading').classList.add('ready');
 }catch(e){console.error(e);$('loading').textContent='No se pudo cargar el cuarto. Recarga para intentarlo de nuevo.'}
 const focusSession=mountFocus({onTurn:alerts.onTurn,onStart:alerts.unlock});
