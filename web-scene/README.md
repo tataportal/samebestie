@@ -40,3 +40,7 @@ En **Ambiente → Alarmas y avisos**, el sonido se prepara al pulsar Empezar/Con
 La luz del fondo ahora admite 0–2 y la luz cálida 0–3. Se conservan los valores guardados y el render anterior; la diferencia de desenfoque de la referencia era una elección de ajustes, no un fallo de GPU confirmado.
 
 Verificación: pruebas del límite de tres relojes, zonas inválidas, cambio de día, inicio/fin del horario de verano de Berkeley, y alarmas en estudio/pausa/fin, pausa manual, reinicio y recuperación de rondas omitidas.
+
+### Luz frontal, temperatura y viñeteado
+
+**Luz del frente** (antes Luz cálida) regula juntas la luz principal, la lámpara, el relleno y la luz ambiental que iluminan al personaje y la mesa. También atenúa la emisión visible de la lámpara; las luces decorativas del fondo conservan su brillo. La **Temperatura de luz** ofrece una gradación artística cálida/neutra/fría de 1800–9000 K, con 3200 K como aspecto original. Cambia el color de las luces y de la emisión de la lámpara, sin modificar el valor de intensidad. **Viñeteado** va de 0 (desactivado) a 0.9, con bordes suaves y centro despejado; se aplica a la escena, no a la interfaz. Los nuevos ajustes se guardan junto al ambiente existente sin borrar sus preferencias anteriores.

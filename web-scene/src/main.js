@@ -38,14 +38,27 @@ const dof=new CozyBokehPass(scene,camera,{focus:3.26,aperture:.006,maxblur:.026}
 const bloom=new UnrealBloomPass(new THREE.Vector2(800,800),.28,.45,1.05);composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const antialias=new ShaderPass(FXAAShader);composer.addPass(antialias);
-const grain=new ShaderPass({uniforms:{tDiffuse:{value:null},time:{value:0},amount:{value:.012}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform sampler2D tDiffuse;uniform float time;uniform float amount;varying vec2 vUv;float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+time*37.61)*43758.5453);}void main(){vec4 c=texture2D(tDiffuse,vUv);float l=dot(c.rgb,vec3(.2126,.7152,.0722));float n=(hash(gl_FragCoord.xy)+hash(gl_FragCoord.xy+17.3)-1.)*amount;float gate=.3+.7*sin(clamp(l,0.,1.)*3.14159);c.rgb+=n*gate;float vig=1.-.12*pow(length((vUv-.5)*1.3),2.);gl_FragColor=vec4(c.rgb*vig,c.a);}`});composer.addPass(grain);
+const grain=new ShaderPass({uniforms:{tDiffuse:{value:null},time:{value:0},amount:{value:.012},vignette:{value:.12}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform sampler2D tDiffuse;uniform float time;uniform float amount;uniform float vignette;varying vec2 vUv;float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+time*37.61)*43758.5453);}void main(){vec4 c=texture2D(tDiffuse,vUv);float l=dot(c.rgb,vec3(.2126,.7152,.0722));float n=(hash(gl_FragCoord.xy)+hash(gl_FragCoord.xy+17.3)-1.)*amount;float gate=.3+.7*sin(clamp(l,0.,1.)*3.14159);c.rgb+=n*gate;float vig=1.-vignette*smoothstep(.12,.85,length((vUv-.5)*1.41421356));gl_FragColor=vec4(c.rgb*vig,c.a);}`});composer.addPass(grain);
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');let motion=!reduced.matches,ready=false,hero=[],fps=0,frames=0,lastMeasure=performance.now(),lastDraw=0,lastFrameTime=0,phaseTime=0;
-const approvedLook={warmth:1.05,background:.75,bokeh:.013,bloom:.3,grain:.01,quality:'low'};
+const approvedLook={warmth:1.05,background:.75,bokeh:.013,bloom:.3,grain:.01,vignette:.12,temperature:3200,quality:'low'};
 let settings={...approvedLook};
 try{if(localStorage.getItem('bestie-look-version')==='2')settings={...settings,...JSON.parse(localStorage.getItem('bestie-look')||'{}')};else{localStorage.setItem('bestie-look',JSON.stringify(settings));localStorage.setItem('bestie-look-version','2')}}catch{}
 function resize(){const w=innerWidth,h=innerHeight;camera.aspect=w/h;camera.fov=THREE.MathUtils.radToDeg(2*Math.atan(.36/Math.max(.76,Math.min(1,w/h))));camera.updateProjectionMatrix();const scale=Math.min(1,({low:1050,balanced:1400,high:1800}[settings.quality]||1050)/Math.max(w,h));renderer.setSize(w,h);composer.setSize(Math.round(w*scale),Math.round(h*scale));antialias.uniforms.resolution.value.set(1/Math.round(w*scale),1/Math.round(h*scale));renderer.domElement.style.width='100%';renderer.domElement.style.height='100%';}
-function applyLook(save=true){key.intensity=1.05*Number(settings.warmth);lamp.intensity=1.4*Number(settings.warmth);dof.uniforms.maxblur.value=Number(settings.bokeh);dof.uniforms.backgroundBrightness.value=Number(settings.background);dof.enabled=Number(settings.bokeh)>.0001||Number(settings.background)!==1;bloom.strength=Number(settings.bloom);grain.uniforms.amount.value=Number(settings.grain);for(const id of ['warmth','background','bokeh','bloom','grain','quality'])$(id).value=settings[id];resize();if(save)try{localStorage.setItem('bestie-look',JSON.stringify(settings))}catch{}}
-for(const id of ['warmth','background','bokeh','bloom','grain','quality'])$(id).addEventListener('input',()=>{settings[id]=$(id).value;applyLook()});
+const lookControls=['warmth','temperature','background','bokeh','bloom','grain','vignette','quality'];
+const lampDimmer={value:1},lampTint={value:new THREE.Vector3(1,1,1)};
+const lampEmissionBase=new THREE.Color('#ff9a38'),lampEmission=new THREE.Color();
+const lightColors=[[key,'#ffc38b'],[lamp,'#ffa34f'],[hemi,'#ffdeb0'],[fill,'#c8dce0'],[roomLight,'#ff9d51'],[backLight,'#ffad5c']];
+const warmTint=new THREE.Color('#ff782d'),neutralTint=new THREE.Color('#fff4e8'),coolTint=new THREE.Color('#c9dfff');
+function applyLook(save=true){
+ const strength=Number(settings.warmth),ratio=strength/approvedLook.warmth;
+ key.intensity=1.05*strength;lamp.intensity=1.4*strength;hemi.intensity=1.05*ratio;fill.intensity=.28*ratio;lampDimmer.value=ratio;
+ const kelvin=Number(settings.temperature);
+ for(const [light,base] of lightColors){light.color.set(base);if(kelvin<3200)light.color.lerp(warmTint,(3200-kelvin)/1400);else if(kelvin<=6500)light.color.lerp(neutralTint,(kelvin-3200)/3300);else light.color.copy(neutralTint).lerp(coolTint,(kelvin-6500)/2500);}
+ lampEmission.copy(lampEmissionBase);if(kelvin<3200)lampEmission.lerp(warmTint,(3200-kelvin)/1400);else if(kelvin<=6500)lampEmission.lerp(neutralTint,(kelvin-3200)/3300);else lampEmission.copy(neutralTint).lerp(coolTint,(kelvin-6500)/2500);
+ lampTint.value.set(lampEmission.r/lampEmissionBase.r,lampEmission.g/lampEmissionBase.g,lampEmission.b/lampEmissionBase.b);
+ $('temperature-value').textContent=`${kelvin} K`;
+ grain.uniforms.vignette.value=Number(settings.vignette);dof.uniforms.maxblur.value=Number(settings.bokeh);dof.uniforms.backgroundBrightness.value=Number(settings.background);dof.enabled=Number(settings.bokeh)>.0001||Number(settings.background)!==1;bloom.strength=Number(settings.bloom);grain.uniforms.amount.value=Number(settings.grain);for(const id of lookControls)$(id).value=settings[id];resize();if(save)try{localStorage.setItem('bestie-look',JSON.stringify(settings))}catch{}}
+for(const id of lookControls)$(id).addEventListener('input',()=>{settings[id]=$(id).value;applyLook()});
 $('settings-button').onclick=()=>{const open=$('settings').hidden;$('settings').hidden=!open;$('settings-button').setAttribute('aria-expanded',String(open))};
 $('reset-look').onclick=()=>{settings={...approvedLook};applyLook()};
 function syncMotion(){$('motion').textContent=motion?'Pausar movimiento':'Activar movimiento';$('motion').setAttribute('aria-pressed',String(motion))}
@@ -55,7 +68,11 @@ const pageMeshes=[];let pose=[],studyMotion;
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 try{
  const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=sealed-3`);
- gltf.scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;const m=o.material;m.side=THREE.DoubleSide;m.roughness=.88;m.metalness=0;if(o.name.includes('Glow')){m.emissive.set('#ff9a38');m.emissiveIntensity=2;m.color.set('#ffb760')}if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
+ gltf.scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;const m=o.material;m.side=THREE.DoubleSide;m.roughness=.88;m.metalness=0;if(o.name.includes('Glow')){m.emissive.set('#ff9a38');m.emissiveIntensity=2;m.color.set('#ffb760');
+ m.onBeforeCompile=shader=>{shader.uniforms.frontLampStrength=lampDimmer;shader.uniforms.frontLampTint=lampTint;
+ shader.vertexShader='varying float cozyWorldZ;\n'+shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\ncozyWorldZ=(modelMatrix*vec4(transformed,1.)).z;');
+ shader.fragmentShader='uniform float frontLampStrength;uniform vec3 frontLampTint;varying float cozyWorldZ;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance*=mix(vec3(1.),frontLampTint*frontLampStrength,smoothstep(1.2,1.8,cozyWorldZ));');};
+ }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
  scene.add(gltf.scene);
  for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
