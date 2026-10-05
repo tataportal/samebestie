@@ -38,14 +38,35 @@ export function createAmbientMixer({createContext=()=>new (window.AudioContext||
   stopAll(){for(const t of tracks.values())setActive(t.id,false)},
  };
 }
+function atmosphereCaption(playing){
+ const captions=[
+  'quiet era. add a little atmosphere.',
+  'a little ambience, as a treat.',
+  'okay, the vibes are layering.',
+  'your room has lore now.',
+  'the vibes have side quests.',
+  'bestie, you opened a whole ecosystem.',
+  'your ambience has ambience.',
+  'this room needs its own postcode.',
+  'we’re worldbuilding at this point.',
+  'one more and we have a cinematic universe.',
+  'executive producer of the atmosphere.',
+ ];
+ if(playing.size===1){
+  const solo={rain:'a little rain, as a treat.',crickets:'the crickets have entered the chat.',forest:'forest era. no hiking required.',fireplace:'cozy has entered the chat.',cafe:'café energy. zero dress code.',brown:'brain, meet your weighted blanket.',pink:'soft static. soft life.',white:'a little shhh for the plot.',calm10:'headphones on. tiny brain spa.',focus40:'headphones on. entering the zone.'};
+  return solo[[...playing][0]]||captions[1];
+ }
+ return captions[Math.min(playing.size,captions.length-1)];
+}
 export function mountAmbient(container){
- container.innerHTML=`<div class="ambient-heading"><strong>Sound layers</strong><button id="ambient-stop" disabled>All off</button></div><div class="ambient-tracks">${AMBIENT_TRACKS.map(t=>`<div class="ambient-track"><button data-ambient="${t.id}" aria-pressed="false"><i aria-hidden="true"></i>${t.name}</button><input type="range" min="0" max="100" value="30" aria-label="${t.name} volume" data-ambient-volume="${t.id}"></div>`).join('')}</div><p class="ambient-help" id="ambient-status" role="status">Layer a little atmosphere.</p><details class="audio-credits"><summary>Audio credits</summary><p>Field recordings, edited into loops via <a href="https://github.com/rafaelmardojai/blanket/blob/775f2a767230a9681850d1b1e085be58656f1382/SOUNDS_LICENSING.md" target="_blank" rel="noopener">Blanket</a>.</p><p>Rain: <a href="https://freesound.org/people/alex36917/sounds/524605/" target="_blank" rel="noopener">alex36917</a>, edited by Porrumentzio, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Excerpted, level matched and crossfaded.</p><p>Forest: <a href="https://freesound.org/people/kvgarlic/sounds/156826/" target="_blank" rel="noopener">kvgarlic</a> / Porrumentzio, CC0. Crickets: <a href="https://soundbible.com/2083-Crickets-Chirping-At-Night.html" target="_blank" rel="noopener">Lisa Redfern</a>. Fireplace: <a href="https://soundbible.com/1543-Fireplace.html" target="_blank" rel="noopener">ezwa</a>. Café: <a href="https://soundbible.com/1664-Restaurant-Ambiance.html" target="_blank" rel="noopener">stephan</a>. The latter three are public domain.</p><p>Noise colors and binaural tones are generated signals. Binaurals work in stereo with headphones.</p></details>`;
- const active=new Set(),errors=new Set(),loading=new Set();let saved={};try{saved=JSON.parse(localStorage.getItem('bestie-ambient-volumes')||'{}')||{}}catch{}
+ container.innerHTML=`<div class="ambient-heading"><strong>Sound layers</strong><button id="ambient-stop" disabled>All off</button></div><div class="ambient-tracks">${AMBIENT_TRACKS.map(t=>`<div class="ambient-track"><button data-ambient="${t.id}" aria-pressed="false"><i aria-hidden="true"></i>${t.name}</button><input type="range" min="0" max="100" value="30" aria-label="${t.name} volume" data-ambient-volume="${t.id}"></div>`).join('')}</div><p class="ambient-help" id="ambient-status" role="status">${atmosphereCaption(new Set())}</p><details class="audio-credits"><summary>Audio credits</summary><p>Field recordings, edited into loops via <a href="https://github.com/rafaelmardojai/blanket/blob/775f2a767230a9681850d1b1e085be58656f1382/SOUNDS_LICENSING.md" target="_blank" rel="noopener">Blanket</a>.</p><p>Rain: <a href="https://freesound.org/people/alex36917/sounds/524605/" target="_blank" rel="noopener">alex36917</a>, edited by Porrumentzio, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Excerpted, level matched and crossfaded.</p><p>Forest: <a href="https://freesound.org/people/kvgarlic/sounds/156826/" target="_blank" rel="noopener">kvgarlic</a> / Porrumentzio, CC0. Crickets: <a href="https://soundbible.com/2083-Crickets-Chirping-At-Night.html" target="_blank" rel="noopener">Lisa Redfern</a>. Fireplace: <a href="https://soundbible.com/1543-Fireplace.html" target="_blank" rel="noopener">ezwa</a>. Café: <a href="https://soundbible.com/1664-Restaurant-Ambiance.html" target="_blank" rel="noopener">stephan</a>. The latter three are public domain.</p><p>Noise colors and binaural tones are generated signals. Binaurals work in stereo with headphones.</p></details>`;
+ const active=new Set(),playing=new Set(),errors=new Set(),loading=new Set();let saved={};try{saved=JSON.parse(localStorage.getItem('bestie-ambient-volumes')||'{}')||{}}catch{}
  const mixer=createAmbientMixer({onChange:t=>{
   const button=container.querySelector(`[data-ambient="${t.id}"]`);button.setAttribute('aria-pressed',String(t.active));button.setAttribute('aria-busy',String(t.status==='loading'));button.classList.toggle('loading',t.status==='loading');
   t.status==='loading'?loading.add(t.id):loading.delete(t.id);t.active?active.add(t.id):active.delete(t.id);t.status==='error'?errors.add(t.id):errors.delete(t.id);
+  t.status==='on'&&t.volume>0?playing.add(t.id):playing.delete(t.id);
   container.querySelector('#ambient-stop').disabled=active.size===0;
-  container.querySelector('#ambient-status').textContent=errors.size?'A sound couldn’t load. Tap its name to retry.':loading.size?'Loading your sound layers…':active.size?`${active.size} layer${active.size===1?'':'s'} on · your little atmosphere`:'Layer a little atmosphere.';
+  container.querySelector('#ambient-status').textContent=errors.size?'A sound couldn’t load. Tap its name to retry.':loading.size?'Loading your sound layers…':atmosphereCaption(playing);
  }});
  for(const t of AMBIENT_TRACKS){const button=container.querySelector(`[data-ambient="${t.id}"]`),slider=container.querySelector(`[data-ambient-volume="${t.id}"]`);button.onclick=()=>mixer.toggle(t.id);const volume=Number(saved[t.id]);if(Number.isFinite(volume)&&saved[t.id]!=null)slider.value=Math.round(Math.max(0,Math.min(1,volume))*100);mixer.setVolume(t.id,Number(slider.value)/100);slider.oninput=()=>{saved[t.id]=Number(slider.value)/100;mixer.setVolume(t.id,saved[t.id],{activate:true});try{localStorage.setItem('bestie-ambient-volumes',JSON.stringify(saved))}catch{}}}
  container.querySelector('#ambient-stop').onclick=()=>mixer.stopAll();return mixer;
