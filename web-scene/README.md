@@ -90,3 +90,9 @@ Book closing and reopening retract the head before the cover sweeps through the 
 The scene now requests a 32-bit floating-point depth attachment on both composer buffers and uses a 1-unit near plane instead of 0.1. The camera/framing, lights and saved appearance preferences are unchanged. Chatito's closed shells render outward faces only, with independent materials so the room and thin paper retain their existing behavior. This targets near-coincident bevel/backing surfaces in the shipped mesh without removing the voxel style or room shadows.
 
 Regression checks use actual adjacent surface hits for depth separation, preserve the sealed frontal/reading seams and compare outward-only surfaces against double-sided geometry in turned poses. Local browser checks cover idle and water, with no WebGL errors. The specific MacBook Air M4 artifact still needs confirmation on that device; the local preview cannot establish that it is resolved there.
+
+### Approved blue-scarf character
+
+Chatito now uses the approved soft three-band cel shading, warmer feathers, larger expressive pupils, a shorter rounded bill with cream socket backing, thinner brown glasses and shorter flippers. The rebuilt voxel scarf wraps around the neck with a side knot and unequal ends; both scarf and mug are blue. The hoodie remains an unapproved draft outside the application.
+
+The production look edits independent decoded attributes at load time, preserving the original GLB and shared pupil geometry. Prop grips are recalibrated for the shorter flippers. The scarf folds down toward the chest during reading, and the torso retracts with the head before the book closes or reopens. Saved lighting settings, room materials and timer behavior are preserved. Regression checks cover independent attributes, eye expressions, bill backing, blue mug, pencil/mug contact and the scarf against the moving book volume; browser checks cover writing, water, frustration and the closing cover.

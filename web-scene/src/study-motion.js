@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createHourglass} from './hourglass.js';
+import {BOOK_BODY_RETRACTION} from './character-look.js';
 import {GESTURES,storyAt,gesturePose,createBookRig} from './personality.js';
 
 const clamp=THREE.MathUtils.clamp;
@@ -43,7 +44,7 @@ function pencil(){
 
 function waterCup(){
  const group=new THREE.Group();group.name='Chatito water cup';
- const ceramic=new THREE.MeshStandardMaterial({color:'#89a99a',roughness:.72});
+ const ceramic=new THREE.MeshStandardMaterial({color:'#478ecc',roughness:.72});
  const water=new THREE.MeshStandardMaterial({color:'#8bbfc4',roughness:.25,metalness:.05});
  const block=(size,position,material=ceramic)=>{
   const m=new THREE.Mesh(new THREE.BoxGeometry(...size),material);
@@ -88,7 +89,7 @@ export function createStudyMotion(scene,hero,pageMeshes){
   const shoulder=v(-1.85+side*.408,1.48,1.84);
   const pivot=new THREE.Group();pivot.name=`Study flipper ${side}`;scene.add(pivot);pivot.position.copy(shoulder);pivot.attach(o);
   pivot.matrixAutoUpdate=false;
-  arms.push({side,pivot,shoulder,restGrip:v(side*.0633,-.0236,.3738)});
+  arms.push({side,pivot,shoulder,restGrip:o.userData.studyGrip?v(...o.userData.studyGrip):v(side*.0633,-.0236,.3738)});
  }
  const pen=pencil();scene.add(pen);
  const home=v(-2.31,1.385,2.39);
@@ -255,7 +256,7 @@ export function createStudyMotion(scene,hero,pageMeshes){
    }
    for(const arm of arms){
     const engaged=Math.max(e,restEngagement,timerReach);
-    const shoulder=arm.shoulder.clone();shoulder.z+=.16*engaged;shoulder.y+=personality.bodyY;
+    const shoulder=arm.shoulder.clone();shoulder.z+=.16*engaged-BOOK_BODY_RETRACTION*bookClearance;shoulder.y+=personality.bodyY;
     const rest=shoulder.clone().add(arm.restGrip);
     const target=rest.lerp(arm.side>0?left:right,engaged);
     const gripAmount=arm.side<0?Math.max(hold,cupReach):Math.max(beat.reach*e,timerReach);

@@ -12,6 +12,7 @@ import {mountClocks} from './world-clocks.js';
 import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
 import {createFaceRig,headTransform} from './personality.js';
+import {applyCharacterLook,CHATITO_FACE,BOOK_BODY_RETRACTION} from './character-look.js';
 import {mountReactions} from './reactions.js';
 import {SCENE_NEAR,SCENE_FAR,createSceneDepth,prepareCharacterSurface} from './render-depth.js';
 import {removeStaticHourglass} from './hourglass.js';
@@ -69,7 +70,7 @@ function syncMotion(){$('motion').textContent=motion?'Pause motion':'Enable moti
 $('motion').onclick=()=>{motion=!motion;syncMotion()};reduced.addEventListener('change',e=>{motion=!e.matches;syncMotion()});syncMotion();
 window.addEventListener('resize',resize);applyLook(false);
 const reactions=mountReactions();
-const pageMeshes=[];let pose=[],studyMotion,faceRig,headPivot;
+const pageMeshes=[];let pose=[],studyMotion,faceRig,headPivot,characterLook;
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 try{
  const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=sealed-3`);
@@ -79,7 +80,8 @@ try{
  shader.fragmentShader='uniform float frontLampStrength;uniform vec3 frontLampTint;varying float cozyWorldZ;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance*=mix(vec3(1.),frontLampTint*frontLampStrength,smoothstep(1.2,1.8,cozyWorldZ));');};
  }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){prepareCharacterSurface(o);if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
  scene.add(gltf.scene);removeStaticHourglass(gltf.scene);partitionScene(scene);
- faceRig=createFaceRig(hero.find(({o})=>o.name.includes('Head'))?.o);
+ faceRig=createFaceRig(hero.find(({o})=>o.name.includes('Head'))?.o,CHATITO_FACE);
+ characterLook=applyCharacterLook(hero,faceRig);
  for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});if(o.name.includes('Head'))headPivot=p;}
  const existing=new Set(scene.children);
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
@@ -102,13 +104,13 @@ function frame(now){
  const interval=1000/30,elapsed=now-lastDraw;if(elapsed<interval)return;
  const dt=lastFrameTime?Math.min((now-lastFrameTime)/1000,.1):0;lastFrameTime=now;lastDraw=now-(elapsed%interval);
  if(motion)phaseTime+=dt;
- const activity=studyMotion.update(dt,focusSession,motion);readBlend=activity.engagement;const personality=activity.personality;
+ const activity=studyMotion.update(dt,focusSession,motion);characterLook.update(activity);readBlend=activity.engagement;const personality=activity.personality;
  for(const {p,name,y} of pose){
   const breath=motion?Math.sin(phaseTime*1.2)*.004:0;p.position.y=y+breath;
-  p.rotation.x=0;p.rotation.y=0;p.rotation.z=personality.bodyRoll;p.position.y+=personality.bodyY;p.position.x=-1.85;p.position.z=1.84;
+  p.rotation.x=0;p.rotation.y=0;p.rotation.z=personality.bodyRoll;p.position.y+=personality.bodyY;p.position.x=-1.85;p.position.z=1.84-BOOK_BODY_RETRACTION*activity.bookClearance;
   if(name.includes('Head')){const h=headTransform(activity,breath);p.position.copy(h.position);p.rotation.copy(h.rotation);}
  }
- const blinkT=phaseTime%5.7,blink=motion?Math.max(0,1-Math.abs(blinkT-.18)/.14):0;faceRig.update(personality,blink);reactions.update(personality,headPivot,camera,motion);
+ const blinkT=phaseTime%5.7,blink=motion?Math.max(0,1-Math.abs(blinkT-.27)/.23):0;faceRig.update(personality,blink);reactions.update(personality,headPivot,camera,motion);
  // This camera is always the intimate focus view; Bao stays hidden.
  if(previousFocus!==focusSession.focusing){renderer.shadowMap.needsUpdate=true;previousFocus=focusSession.focusing;}
  if(activity.active&&now-lastShadow>200){renderer.shadowMap.needsUpdate=true;lastShadow=now;}

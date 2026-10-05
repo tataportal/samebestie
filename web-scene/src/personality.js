@@ -23,7 +23,7 @@ export function gesturePose(id,t){
   case 'thinking':p.pitch=-.18*w;p.yaw=-.09*w;p.gazeY=.014*w;bubble('dots',1.2);break;
   case 'aha':{const pop=ease(t/.45)*(1-ease((t-1)/.5));p.pitch=-.15*pop;p.eye=1+.12*pop;p.y=.047*pop;p.bodyY=.025*pop;p.yaw=.02*Math.sin(t*14)*w;bubble('idea',.25);break;}
   case 'window':p.yaw=-.34*w;p.pitch=-.07*w;p.gazeX=-.025*w;p.eye=1-.25*ease((t-6)/.3)*(1-ease((t-6.3)/.3));break;
-  case 'frustrated':{const slump=ease((t-1.8)/1.4)*(1-ease((t-6)/1.6));p.pitch=.2*w;p.roll=.04*Math.sin(t*4)*w*(1-slump);p.y=-.18*slump;p.z=.045*slump;p.bodyY=-.065*slump;p.eye=1-.68*slump;bubble('scribble',2,2.2);break;}
+  case 'frustrated':{const slump=ease((t-1.8)/1.4)*(1-ease((t-6)/1.6));p.pitch=.055*w;p.roll=.04*Math.sin(t*4)*w*(1-slump);p.y=-.045*slump;p.z=.015*slump;p.bodyY=-.035*slump;p.eye=1-.68*slump;bubble('scribble',2,2.2);break;}
   case 'cheek':p.roll=.16*w;p.x=-.033*w;p.y=-.035*w;p.eye=1-.4*w-.5*ease((t-3)/.5)*(1-ease((t-3.6)/.6));p.pitch=.02*w;break;
   case 'stretch':p.bodyY=.06*w;p.y=.065*w;p.roll=.09*Math.sin(t*1.2)*w;p.bodyRoll=.025*Math.sin(t*1.2)*w;p.pitch=-.08*w;p.eye=1-.9*w;break;
   case 'breathe':{const phase=t%10,breath=phase<4?ease(phase/4):1-ease((phase-4)/6);p.bodyY=.03*breath*w;p.y=.03*breath*w;p.eye=1-.93*w;p.pitch=-.035*w;p.bubble={kind:phase<4?'inhale':'exhale',age:phase<4?phase:phase-4,duration:phase<4?4:6,breath};break;}
@@ -41,12 +41,13 @@ export function headTransform(a,breath=0){
  const position=new THREE.Vector3(-1.85+p.x-a.drinking*.05,1.48+breath+p.y+a.turning*.018,1.84+a.engagement*.045-a.turning*.10+p.z);
  const rotation=new THREE.Euler(a.engagement*.18+a.writing*.04-a.turning*.08-a.drinking*.10+a.flipping*.04+p.pitch,a.headYaw,p.roll);
  position.lerp(new THREE.Vector3(-1.85,1.65+breath,1.52),c);
+ rotation.x+=.012;rotation.z+=.052;
  rotation.x=THREE.MathUtils.lerp(rotation.x,-.18,c);rotation.y*=1-c;rotation.z*=1-c;
  return {position,rotation};
 }
 
 // Separate existing colored triangles rather than drawing a new face over it.
-export function createFaceRig(head){
+export function createFaceRig(head,{eyeWidth=1,eyeHeight=1,gazeY=0}={}){
  if(!head)return {update(){}};
  const g=head.geometry,c=g.attributes.color,p=g.attributes.position,idx=g.index;
  if(!c)return {update(){}};
@@ -78,7 +79,7 @@ export function createFaceRig(head){
   const backing=new THREE.Mesh(mergeGeometries(cells),cream);backing.name='Eye socket backing';backing.layers.mask=head.layers.mask;head.add(backing);for(const cell of cells)cell.dispose();
   pivot.position.copy(center);mesh.position.copy(center).negate();mesh.layers.mask=head.layers.mask;mesh.name=`Chatito ${side} pupil`;pivot.add(mesh);head.add(pivot);eyes.push({pivot,center});
  }
- return {head,glasses,eyes,update(pose,blink=0){glasses.position.copy(delta).multiplyScalar(pose?.glasses||0);for(const {pivot,center} of eyes){pivot.scale.y=Math.max(.07,(pose?.eye??1)*(1-blink*.93));pivot.position.copy(center);pivot.position.x+=(pose?.gazeX||0)/head.scale.x;pivot.position.y+=(pose?.gazeY||0)/head.scale.y;}}};
+ return {head,glasses,eyes,update(pose,blink=0){glasses.position.copy(delta).multiplyScalar(pose?.glasses||0);for(const {pivot,center} of eyes){pivot.scale.x=eyeWidth;pivot.scale.y=eyeHeight*Math.max(.07,(pose?.eye??1)*(1-blink*.93));pivot.position.copy(center);pivot.position.x+=(pose?.gazeX||0)/head.scale.x;pivot.position.y+=((pose?.gazeY||0)+gazeY)/head.scale.y;}}};
 }
 
 export function createBookRig(scene){
