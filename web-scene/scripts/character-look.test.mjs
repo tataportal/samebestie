@@ -9,11 +9,19 @@ import {partitionScene,markForeground,FOREGROUND} from '../src/scene-layers.js';
 import {prepareCharacterSurface} from '../src/render-depth.js';
 import {createStudyMotion} from '../src/study-motion.js';
 import {createWardrobe} from '../src/wardrobe.js';
+import {repositionDeskLamp} from '../src/desk-lamp.js';
 const bytes=fs.readFileSync(new URL('../public/models/cozy-room.glb',import.meta.url));
 const {scene:root}=await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
 const scene=new T.Scene();scene.add(root);const hero=[],pages=[];
 root.traverse(o=>{if(!o.isMesh)return;if(o.name.includes('Chatito')){prepareCharacterSurface(o);if(!o.name.includes('Leg'))hero.push({o});}if(o.name.includes('ReadingPage'))pages.push(o);});
-partitionScene(scene);const head=root.getObjectByName('Web_Chatito_Head');const face=createFaceRig(head,CHATITO_FACE);
+partitionScene(scene);
+const triangleCount=()=>{let n=0;scene.traverse(o=>{if(o.isMesh)n+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3});return n};
+const originalTriangles=triangleCount(),fixedFoot=[];scene.updateMatrixWorld(true);const originalRoom=scene.getObjectByName('Web_Room_Foreground'),originalPositions=originalRoom.geometry.attributes.position,footPoint=new T.Vector3();
+for(let i=0;i<originalRoom.geometry.index.count;i++){footPoint.fromBufferAttribute(originalPositions,originalRoom.geometry.index.getX(i)).applyMatrix4(originalRoom.matrixWorld);if(footPoint.y<1.4&&footPoint.x<-2.4&&footPoint.z>1.8)fixedFoot.push(footPoint.clone())}
+const fixtures=repositionDeskLamp(scene);assert.equal(fixtures.length,2,'lamp housing and emitter are extracted together');assert.equal(triangleCount(),originalTriangles,'moving the lamp preserves every triangle');
+let footVertices=0;for(const fixture of fixtures){const positions=fixture.geometry.attributes.position;for(let i=0;i<positions.count;i++){footPoint.fromBufferAttribute(positions,i);if(footPoint.y<1.4){footVertices++;assert.ok(fixedFoot.some(p=>p.distanceTo(footPoint)<1e-5),'lamp base stays planted at its original position')}}}assert.ok(footVertices>0);
+const lampBox=new T.Box3();for(const fixture of fixtures)lampBox.union(new T.Box3().setFromObject(fixture));
+const head=root.getObjectByName('Web_Chatito_Head');const face=createFaceRig(head,CHATITO_FACE);
 const pupilAttribute=face.eyes[0].pivot.children[0].geometry.attributes.position;
 const oldPupil=pupilAttribute.array.slice(),oldHeadColor=head.geometry.attributes.color.array.slice();
 const room=scene.getObjectByName('Web_Room_Background'),roomMaterial=room.material;
@@ -50,6 +58,8 @@ function checkHoodieCover(){if(cover.rotation.z<.05||cover.rotation.z>Math.PI-.0
 motion.preview('bop');motion.setTempo(80);for(let i=0;i<100;i++)frame();assert.equal(motion.action,'bop');
 motion.preview('finish');for(let i=0;i<240;i++){const a=frame();if(i%2===0){checkCover(a);checkHoodieCover();}}
 motion.preview('writing');for(let i=0;i<240;i++){const a=frame();if(i%2===0){checkCover(a);checkHoodieCover();}}assert.ok(sweeps>20);
+let closestLampGap=Infinity;for(const action of ['reading','page-turn','pencil-play','writing','water','hourglass','bop','reread','glasses','thinking','aha','window','frustrated','cheek','stretch','breathe','finish','blank','nervous']){motion.preview(action);for(let i=0;i<620;i++){frame();const hoodBox=new T.Box3().setFromObject(wardrobe.hood),gap=hoodBox.min.x-lampBox.max.x;closestLampGap=Math.min(closestLampGap,gap);assert.ok(gap>.04,`${action} keeps lamp clear of hood: ${gap}`)}}
+console.log(`PASS: lamp clears all 19 action sweeps; minimum horizontal gap ${closestLampGap.toFixed(3)}.`);
 wardrobe.set('scarf');assert.equal(art.scarf.material.visible,true);assert.equal(wardrobe.hood.visible,false);assert.equal(body.geometry,baseBody);
 assert.equal(art.scarf.layers.mask,1<<FOREGROUND);assert.equal(art.billBacking.layers.mask,1<<FOREGROUND);
 console.log('PASS: approved toon look, independent attributes, expressive pupils, filled bill socket, blue mug, recalibrated grips and scarf/book sweep.');
