@@ -35,3 +35,27 @@ const book=createBookRig(root);assert.ok(book.pivot.children.length>0,'actual bo
 const bounds=new THREE.Box3().setFromObject(book.pivot);assert.ok(bounds.max.x<-1.84&&bounds.min.y>1.35,'closed half rests on the other half of the book');
 book.update(0,null);assert.equal(book.marker.visible,false);assert.equal(book.pivot.rotation.z,0);
 console.log('PASS: 12 gesture previews, varying quiet sequences, 4/6 breathing, pause/reduced-motion, original face triangles, closed-eye backing and real book closing.');
+
+// Sweep the actual beak triangles against the articulated book's volume.
+// A final-frame screenshot misses the collision near the vertical midpoint.
+const {headTransform}=await import('../src/personality.js');
+const p=head.geometry.attributes.position,c=head.geometry.attributes.color,indices=head.geometry.index;
+const beak=[];const originalPivot=new THREE.Vector3(-1.85,1.48,1.84);
+for(let i=0;i<indices.count;i+=3){const j=indices.getX(i);if(c.getX(j)<.8||c.getY(j)>.5)continue;beak.push(new THREE.Triangle(...[0,1,2].map(k=>new THREE.Vector3().fromBufferAttribute(p,indices.getX(i+k)).applyMatrix4(head.matrixWorld).sub(originalPivot))))}
+const half=book.pivot.children[0],box=half.geometry.boundingBox.clone().applyMatrix4(half.matrix).expandByScalar(.008);
+const rigScene=new THREE.Scene(),rig=createStudyMotion(rigScene,[],[]),cover=rigScene.getObjectByName('Closing book cover');
+const transform=new THREE.Matrix4(),beakToCover=new THREE.Matrix4(),quat=new THREE.Quaternion(),tri=new THREE.Triangle();let oldCollision=false,samples=0;
+function overlaps(activity){const h=headTransform(activity);transform.compose(h.position,quat.setFromEuler(h.rotation),new THREE.Vector3(1,1,1));cover.updateWorldMatrix(true,false);beakToCover.copy(cover.matrixWorld).invert().multiply(transform);return beak.some(t=>{tri.copy(t);tri.a.applyMatrix4(beakToCover);tri.b.applyMatrix4(beakToCover);tri.c.applyMatrix4(beakToCover);return box.intersectsTriangle(tri)})}
+rig.preview('finish');
+for(let i=0;i<240;i++){const a=rig.update(1/30,idle,true);if(i%2===0&&cover.rotation.z>.05&&cover.rotation.z<Math.PI-.05){samples++;assert.equal(overlaps(a),false,`beak clearance while closing at frame ${i}`);oldCollision ||= overlaps({...a,bookClearance:0});}}
+assert.ok(samples>20);assert.ok(oldCollision,'regression reproduces the old beak intersection');
+rig.preview('writing');let writesAfterOpen=false;
+for(let i=0;i<240;i++){const a=rig.update(1/30,idle,true);if(cover.rotation.z>.001){assert.equal(a.writing,0,'writing waits until the book is open');assert.equal(overlaps(a),false,'beak clearance while reopening')}else if(a.writing>.8)writesAfterOpen=true;}
+assert.ok(writesAfterOpen,'queued writing starts after the safe return');
+rig.preview('water');const waterState=rig.update(.1,idle,true);assert.equal(waterState.writing,0);assert.equal(waterState.turning,0);
+rig.preview('finish');for(let i=0;i<240;i++)rig.update(1/30,idle,true);rig.preview('finish');let reopened=false,reclosed=false;for(let i=0;i<450;i++){rig.update(1/30,idle,true);if(cover.rotation.z<.001)reopened=true;if(reopened&&cover.rotation.z>Math.PI-.001)reclosed=true;}assert.ok(reopened&&reclosed,'replaying finish first opens safely, then replays the full closure');
+rig.clearPreview();const complete={focusing:false,reading:false,revision:1,state:{started:true,running:false,complete:true,phase:'study'}};
+for(let i=0;i<360;i++){const a=rig.update(1/30,complete,true);if(cover.rotation.z>.05&&cover.rotation.z<Math.PI-.05)assert.equal(overlaps(a),false,'automatic completion also clears the face');}
+assert.ok(cover.rotation.z>Math.PI-.001,'automatic completion reaches a fully closed book');
+rig.preview('writing');rig.update(.1,idle,true);const frozen=rig.update(0,idle,false),frozenAngle=cover.rotation.z;for(let i=0;i<30;i++)rig.update(1/30,idle,false);assert.equal(cover.rotation.z,frozenAngle);assert.equal(rig.update(0,idle,false).bookClearance,frozen.bookClearance,'motion off freezes the safe return');
+console.log('PASS: swept beak/book clearance, safe reopen, exclusive writing/water/page tracks and finish replay.');

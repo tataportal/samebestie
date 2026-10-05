@@ -34,6 +34,17 @@ export function gesturePose(id,t){
  return p;
 }
 
+// Shared by the renderer and swept-collision tests. Closing/reopening the book
+// owns the head pose until its whole cover has cleared the face.
+export function headTransform(a,breath=0){
+ const p=a.personality,c=a.bookClearance||0;
+ const position=new THREE.Vector3(-1.85+p.x-a.drinking*.05,1.48+breath+p.y+a.turning*.018,1.84+a.engagement*.045-a.turning*.10+p.z);
+ const rotation=new THREE.Euler(a.engagement*.18+a.writing*.04-a.turning*.08-a.drinking*.10+a.flipping*.04+p.pitch,a.headYaw,p.roll);
+ position.lerp(new THREE.Vector3(-1.85,1.65+breath,1.52),c);
+ rotation.x=THREE.MathUtils.lerp(rotation.x,-.18,c);rotation.y*=1-c;rotation.z*=1-c;
+ return {position,rotation};
+}
+
 // Separate existing colored triangles rather than drawing a new face over it.
 export function createFaceRig(head){
  if(!head)return {update(){}};

@@ -11,7 +11,7 @@ import {mountFocus} from './focus.js';
 import {mountClocks} from './world-clocks.js';
 import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
-import {createFaceRig} from './personality.js';
+import {createFaceRig,headTransform} from './personality.js';
 import {mountReactions} from './reactions.js';
 import {removeStaticHourglass} from './hourglass.js';
 import {CozyBokehPass} from './bokeh.js';
@@ -105,8 +105,7 @@ function frame(now){
  for(const {p,name,y} of pose){
   const breath=motion?Math.sin(phaseTime*1.2)*.004:0;p.position.y=y+breath;
   p.rotation.x=0;p.rotation.y=0;p.rotation.z=personality.bodyRoll;p.position.y+=personality.bodyY;p.position.x=-1.85;p.position.z=1.84;
-  if(name.includes('Head')){p.rotation.x=readBlend*.18+activity.writing*.04-activity.turning*.08-activity.drinking*.10+activity.flipping*.04;p.rotation.y=activity.headYaw;p.position.y+=activity.turning*.018;p.position.x-=activity.drinking*.05;p.position.z+=readBlend*.045-activity.turning*.10;
-   p.rotation.x+=personality.pitch;p.rotation.z=personality.roll;p.position.x+=personality.x;p.position.y+=personality.y-personality.bodyY;p.position.z+=personality.z;}
+  if(name.includes('Head')){const h=headTransform(activity,breath);p.position.copy(h.position);p.rotation.copy(h.rotation);}
  }
  const blinkT=phaseTime%5.7,blink=motion?Math.max(0,1-Math.abs(blinkT-.18)/.14):0;faceRig.update(personality,blink);reactions.update(personality,headPivot,camera,motion);
  // This camera is always the intimate focus view; Bao stays hidden.

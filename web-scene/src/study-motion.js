@@ -77,7 +77,7 @@ export function aimFlipper(pivot,restGrip,target,shoulder,thickness=1){
 
 export function createStudyMotion(scene,hero,pageMeshes){
  const clock=new StudyClock();
- const book=createBookRig(scene);let storyTime=0,phaseElapsed=0,phaseKey,gesture=null,bookClose=0;
+ const book=createBookRig(scene);let storyTime=0,phaseElapsed=0,phaseKey,gesture=null,bookClose=0,bookClearance=0,clockDelay=0,clockActivation,queuedFinish=false;
  const hourglass=createHourglass(scene);let flipping=false;
  let preview=null,previewTime=0,breakTime=0,cupLift=0,cupReach=0,restEngagement=0;
  const arms=[];
@@ -137,17 +137,24 @@ export function createStudyMotion(scene,hero,pageMeshes){
  };
  return {
   get action(){return preview||(flipping?'hourglass':gesture?.id||studyBeat(clock.time).action)},
-  preview(action){preview=action;previewTime=0;breakTime=0;hourglass.restartPreview();},
-  clearPreview(){preview=null;previewTime=0;},
+  preview(action){queuedFinish=action==='finish'&&bookClose>0;preview=action;previewTime=0;breakTime=0;hourglass.restartPreview();},
+  clearPreview(){queuedFinish=false;preview=null;previewTime=0;},
   update(dt,session,motion){
    const state=session.state||{};
-   const timer=hourglass.update(dt,state,motion&&(!preview||preview==='hourglass'),preview==='hourglass');flipping=timer.flipping&&!preview||preview==='hourglass';
+   if(queuedFinish&&bookClose===0&&bookClearance===0)queuedFinish=false;
+   const bookBusy=bookClose>0||bookClearance>0;
+   const clockBlocked=(bookClose>0&&bookClose<1)||bookClearance>0;
+   const activationKey=`${state.sessionId}:${state.actionStartedAt}`;
+   if(activationKey!==clockActivation){clockActivation=activationKey;clockDelay=0;}
+   if(clockBlocked&&motion&&state.running)clockDelay+=dt;
+   const clockState=Number.isFinite(state.actionStartedAt)?{...state,actionStartedAt:state.actionStartedAt+clockDelay*1000,actionElapsed:Math.max(0,(state.actionElapsed||0)-clockDelay)}:state;
+   const timer=hourglass.update(clockBlocked?0:dt,clockState,motion&&(!preview||preview==='hourglass'),preview==='hourglass');flipping=timer.flipping&&!preview||preview==='hourglass';
    const nextKey=`${session.revision}:${state.sessionId}:${state.started}:${state.phase}:${state.round}:${state.complete}`;
    if(nextKey!==phaseKey){phaseElapsed=0;phaseKey=nextKey;if(!session.focusing)storyTime=0;}
-   if(preview&&motion)previewTime+=dt;
-   if(!preview&&motion&&!flipping&&(state.running||state.complete)){phaseElapsed+=dt;if(session.reading){const next=storyAt(storyTime+dt);if(!next||gesture||studyBeat(clock.time).action==='reading')storyTime+=dt;}}
+   if(preview&&motion&&!queuedFinish&&(!bookBusy||preview==='finish'))previewTime+=dt;
+   if(!preview&&motion&&!flipping&&(!bookBusy||state.complete)&&(state.running||state.complete)){phaseElapsed+=dt;if(session.reading){const next=storyAt(storyTime+dt);if(!next||gesture||studyBeat(clock.time).action==='reading')storyTime+=dt;}}
    const priorGesture=gesture;gesture=null;
-   if(preview&&GESTURES[preview])gesture={id:preview,time:Math.min(previewTime,GESTURES[preview])};
+   if(preview&&!queuedFinish&&GESTURES[preview])gesture={id:preview,time:Math.min(previewTime,GESTURES[preview])};
    else if(!preview&&!flipping&&state.started){
     if(state.complete&&phaseElapsed<11)gesture={id:'finish',time:phaseElapsed};
     else if(state.phase==='rest'&&phaseElapsed<8)gesture={id:'stretch',time:phaseElapsed};
@@ -155,23 +162,38 @@ export function createStudyMotion(scene,hero,pageMeshes){
     else if(session.focusing)gesture=storyAt(storyTime);
    }
    if(priorGesture&&!gesture&&!preview&&session.reading)clock.time=Math.floor(clock.time/30)*30+27;
-   const personality=gesturePose(gesture?.id,gesture?.time||0);
-   let beat=clock.update(dt,{focusing:session.focusing,running:session.reading&&!flipping&&!gesture,motion,revision:session.revision});
+   let personality=gesturePose(gesture?.id,gesture?.time||0);
+   let beat=clock.update(dt,{focusing:session.focusing,running:session.reading&&!flipping&&!gesture&&!bookBusy,motion,revision:session.revision});
    if(preview==='reading')beat=studyBeat(previewTime%3.5);
    if(preview==='page-turn')beat=studyBeat(3.3+Math.min(previewTime,4.7));
    if(preview==='pencil-play')beat=studyBeat(previewTime<2?10+previewTime:12+(previewTime-2)%3.5);
    if(preview==='writing')beat=studyBeat(16+Math.min(previewTime,7.3));
-   // Freeze the open leaf during a reaction; all non-writing gestures put the pen down.
-   if(gesture){beat={...beat,t:0,turn:pageProgress,reach:0,hold:0,write:0};
-    if(gesture.id==='thinking'||gesture.id==='blank'){beat.hold=personality.w;beat.t=13;}
-    if(gesture.id==='aha'&&gesture.time>1.5){beat={...beat,t:17+(gesture.time-1.5)*1.6,hold:ease((gesture.time-1.5)/.65)*personality.w,write:ease((gesture.time-2)/.5)*personality.w};}
-   }
    const finishing=gesture?.id==='finish'||(!preview&&state.complete);
-   bookClose=THREE.MathUtils.damp(bookClose,finishing?personality.close||(!gesture?1:0):0,12,dt);
-   book.update(bookClose,gesture?.id==='finish'?gesture.time:!preview&&state.complete?11:null);
-   for(const {o} of pages)o.visible=bookClose<.65;
-   const restActive=preview==='water'||(!preview&&!flipping&&!gesture&&(state.complete||(state.started&&state.phase==='rest')));
-   const studying=!flipping&&(preview?preview!=='water':session.focusing)||!!gesture;
+   const deferReopen=flipping&&bookClose===1;
+   const reopening=!finishing&&!deferReopen&&bookClose>.0001;
+   const clearing=(finishing&&bookClose<.9999)||reopening;
+   const canAdvance=motion&&(!!preview||state.running||state.complete||reopening||bookClearance>.0001);
+   // Retract first. Never start either sweep with the head still over the book.
+   if(canAdvance)bookClearance=THREE.MathUtils.damp(bookClearance,clearing?1:0,8,dt);
+   if(bookClearance>.9999)bookClearance=1;
+   if(bookClearance<.0001)bookClearance=0;
+   const targetClose=deferReopen?1:finishing?personality.close||(!gesture?1:0):0;
+   if(canAdvance&&(bookClearance>.999||Math.abs(targetClose-bookClose)<.0001))bookClose=THREE.MathUtils.damp(bookClose,targetClose,12,dt);
+   if(bookClose>.9999)bookClose=1;
+   if(bookClose<.0001)bookClose=0;
+   const returning=!finishing&&!deferReopen&&(bookClose>0||bookClearance>0);
+   if(returning){gesture=null;personality=gesturePose(null,0);}
+   // A single action owns the props. Water/clock gestures cannot inherit a
+   // partly turned page or the writing track from a previous preview.
+   const propsIdle=returning||preview==='water'||flipping;
+   if(gesture||propsIdle||finishing){beat={...beat,t:0,turn:finishing||propsIdle?0:pageProgress,reach:0,hold:0,write:0};
+    if(!propsIdle&&(gesture?.id==='thinking'||gesture?.id==='blank')){beat.hold=personality.w;beat.t=13;}
+    if(!propsIdle&&gesture?.id==='aha'&&gesture.time>1.5){beat={...beat,t:17+(gesture.time-1.5)*1.6,hold:ease((gesture.time-1.5)/.65)*personality.w,write:ease((gesture.time-2)/.5)*personality.w};}
+   }
+   book.update(bookClose,finishing?(gesture?.time??11):null);
+   for(const {o} of pages)o.visible=bookClose<.01;
+   const restActive=!returning&&(preview==='water'||(!preview&&!flipping&&!gesture&&(state.complete||(state.started&&state.phase==='rest'))));
+   const studying=!returning&&!flipping&&(preview?preview!=='water':session.focusing)||!!gesture;
    const restRunning=preview==='water'||state.complete||state.running;
    if(!restActive)breakTime=0;
    else if(motion&&restRunning)breakTime+=dt;
@@ -216,7 +238,7 @@ export function createStudyMotion(scene,hero,pageMeshes){
    const left=restLeft.clone();
    (beat.cycle%2?right:left).lerp(edge,beat.reach*e);
    right.lerp(cup.localToWorld(v(-.113,0,0)),cupReach);
-   const timerReach=(!preview||preview==='hourglass')?timer.reach:0;left.lerp(timer.grip,timerReach);
+   const timerReach=!returning&&(!preview||preview==='hourglass')?timer.reach:0;left.lerp(timer.grip,timerReach);
    if(gesture){
     const {id,time:g}=gesture,w=personality.w;
     if(id==='glasses')left.lerp(v(-1.47,2.02+personality.glasses,2.46),ease((g-.7)/.6)*(1-ease((g-2.7)/.7)));
@@ -241,11 +263,11 @@ export function createStudyMotion(scene,hero,pageMeshes){
    }
    // Leave completed annotations on the paper until the next page turn.
    const visibleMarks=t>=17?Math.min(15,Math.floor(clamp((t-17)/6.1,0,1)*15)):(beat.cycle>0&&t<4?15:0);
-   ink.visible=e>.95&&visibleMarks>0&&bookClose<.05;
+   ink.visible=!finishing&&!returning&&e>.95&&visibleMarks>0&&bookClose<.05;
    for(let i=0;i<marks.length;i++)marks[i].visible=i<visibleMarks;
-   return {personality,time:clock.time,engagement:e,turning:beat.reach*e,writing:beat.write*e,drinking:cupLift,flipping:timerReach,
+   return {personality,bookClearance,time:clock.time,engagement:e,turning:beat.reach*e,writing:beat.write*e,drinking:cupLift,flipping:timerReach,
     headYaw:personality.yaw+e*(.045*Math.sin(beat.t*.8)+.07*beat.write)-.18*cupLift+timer.headYaw*(preview&&preview!=='hourglass'?0:1),
-    active:motion&&(!!preview||!!gesture||flipping||session.reading||(restActive&&restRunning&&breakTime<9))};
+    active:motion&&(returning||!!preview||!!gesture||flipping||session.reading||(restActive&&restRunning&&breakTime<9))};
   }
  };
 }
