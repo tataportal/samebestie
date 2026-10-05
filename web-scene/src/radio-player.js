@@ -6,9 +6,25 @@ export const STATIONS = [
  {id:'PL_6eZZ6BqSfe8phG8GBzM1h8ofzAw42zJ',name:'Canciones para cuando llueva',number:'105'},
 ];
 
+export function parseYouTubeLink(value){
+ try{
+  const url=new URL(value.trim().replace(/^(?=(?:www\.|music\.|m\.)?youtube\.com\/|youtu\.be\/)/i,'https://'));
+  if(!['https:','http:'].includes(url.protocol)||url.username||url.password||url.port)return null;
+  const host=url.hostname.toLowerCase();
+  if(!['youtube.com','www.youtube.com','music.youtube.com','m.youtube.com','youtu.be'].includes(host))return null;
+  const path=url.pathname.split('/').filter(Boolean);
+  if(host!=='youtu.be'&&!['watch','playlist','shorts','live','embed'].includes(path[0]))return null;
+  const list=url.searchParams.get('list');
+  if(list&&/^[A-Za-z0-9_-]{10,150}$/.test(list))return {type:'playlist',id:list,url:`https://music.youtube.com/playlist?list=${list}`};
+  const id=host==='youtu.be'?path[0]:['shorts','live','embed'].includes(path[0])?path[1]:url.searchParams.get('v');
+  if(id&&/^[A-Za-z0-9_-]{11}$/.test(id))return {type:'video',id,url:`https://www.youtube.com/watch?v=${id}`};
+ }catch{}
+ return null;
+}
+
 // Own the async player lifecycle separately from the scene and Pomodoro.
 export function createRadioPlayer({createPlayer,onStatus,onPlaying=()=>{},canPlay=()=>true,schedule=setTimeout,cancel=clearTimeout}) {
- let player=null,ready=false,generation=0,station=0,index=0,wanted=false,playing=false,volume=45,retry=null,watchdog=null,failed=false,handleError=null;
+ let player=null,ready=false,generation=0,source={type:'playlist',id:STATIONS[0].id},index=0,wanted=false,playing=false,volume=45,retry=null,watchdog=null,failed=false,handleError=null;
  const tried=new Set();
  const status=text=>onStatus(text);
  function active(value){playing=value;onPlaying(value)}
@@ -17,7 +33,8 @@ export function createRadioPlayer({createPlayer,onStatus,onPlaying=()=>{},canPla
  function close(){stop();generation++;player?.destroy();player=null;ready=false;failed=false}
  function load(){
   if(!ready)return;
-  const args={list:STATIONS[station].id,listType:'playlist',index};
+  if(source.type==='video'){const args={videoId:source.id};if(wanted&&canPlay())player.loadVideoById(args);else player.cueVideoById(args);return}
+  const args={list:source.id,listType:'playlist',index};
   if(wanted&&canPlay())player.loadPlaylist(args);else player.cuePlaylist(args);
  }
  function boot(){
@@ -41,6 +58,7 @@ export function createRadioPlayer({createPlayer,onStatus,onPlaying=()=>{},canPla
    onError(event){
     if(token!==generation||retry!==null)return;
     active(false);failed=true;
+    if(source.type==='video'){stop();status('This video can’t play here. Try another link or open YouTube.');return}
     if(![100,101,150].includes(event.data)){stop();status('YouTube couldn’t load. Try Play again or open the playlist.');return}
     const current=player.getPlaylistIndex();if(current>=0)index=current;
     tried.add(index);
@@ -59,13 +77,15 @@ export function createRadioPlayer({createPlayer,onStatus,onPlaying=()=>{},canPla
     },900);
    },
   };
-  handleError=events.onError;player=createPlayer(events);
+  handleError=events.onError;player=createPlayer(events,source);
  }
  return {
-  select(value){if(!Number.isInteger(value)||!STATIONS[value])return;station=value;index=0;tried.clear();active(false);if(player)boot()},
-  play(){wanted=true;tried.clear();if(!player)boot();else if(ready){if(failed){handleError({data:150})}else player.playVideo()}},
+  select(value){if(!Number.isInteger(value)||!STATIONS[value])return;source={type:'playlist',id:STATIONS[value].id};index=0;tried.clear();active(false);if(player)boot()},
+  useLink(value){const parsed=parseYouTubeLink(value);if(!parsed)return false;source=parsed;index=0;tried.clear();active(false);if(player)boot();return true},
+  get hasNext(){return source.type==='playlist'},
+  play(){wanted=true;tried.clear();if(!player||(failed&&source.type==='video'))boot();else if(ready){if(failed){handleError({data:150})}else player.playVideo()}},
   pause(){stop();status('Paused · no rush')},
-  next(){if(!ready)return;clearRetry();tried.clear();wanted=true;failed=false;const current=player.getPlaylistIndex();const length=player.getPlaylist()?.length;index=length?((current>=0?current:index)+1)%length:index+1;load()},
+  next(){if(!ready||source.type!=='playlist')return;clearRetry();tried.clear();wanted=true;failed=false;const current=player.getPlaylistIndex();const length=player.getPlaylist()?.length;index=length?((current>=0?current:index)+1)%length:index+1;load()},
   volume(value){volume=Math.max(0,Math.min(100,Number(value)||0));if(ready)player.setVolume(volume)},
   close,
   get playing(){return playing},

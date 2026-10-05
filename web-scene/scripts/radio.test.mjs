@@ -33,3 +33,22 @@ tick();tick();assert.equal(recoveryIndex,2,'silent second restriction recovers w
 recoveryEvents.onStateChange({data:3});assert.equal(scheduled.size,1,'buffering alone can accompany an unavailable overlay');
 recoveryEvents.onStateChange({data:1});recovery.close();assert.equal(scheduled.size,0);
 console.log('PASS: consecutive silent YouTube restrictions recover; playback cancels recovery.');
+
+// Pasted links use the same queue lifecycle, with single videos kept out of
+// playlist skipping/retries. Invalid links never replace the current source.
+const {parseYouTubeLink}=await import('../src/radio-player.js');
+for(const url of ['https://www.youtube.com/watch?v=1m0fmAJEGCE','https://music.youtube.com/watch?v=1m0fmAJEGCE&si=share','https://youtu.be/1m0fmAJEGCE?si=share','youtube.com/shorts/1m0fmAJEGCE','https://www.youtube.com/live/1m0fmAJEGCE'])assert.equal(parseYouTubeLink(url)?.id,'1m0fmAJEGCE');
+for(const host of ['www.youtube.com','music.youtube.com'])assert.deepEqual(parseYouTubeLink(`https://${host}/playlist?list=${STATIONS[0].id}`),{type:'playlist',id:STATIONS[0].id,url:`https://music.youtube.com/playlist?list=${STATIONS[0].id}`});
+assert.equal(parseYouTubeLink(`https://music.youtube.com/watch?v=1m0fmAJEGCE&list=${STATIONS[0].id}`).type,'playlist');
+for(const url of ['', 'hello','https://youtube.com.evil.test/watch?v=1m0fmAJEGCE','https://evil.test/?v=1m0fmAJEGCE','javascript:alert(1)','https://youtube.com/@channel','https://youtube.com/watch?v=bad','https://evil@youtube.com/watch?v=1m0fmAJEGCE'])assert.equal(parseYouTubeLink(url),null,url);
+let customEvents,customStatus,customLoads=[],customRetries=0;
+const customPlayer={loadVideoById:a=>customLoads.push(['video',a]),cueVideoById:a=>customLoads.push(['cueVideo',a]),loadPlaylist:a=>customLoads.push(['playlist',a]),cuePlaylist:a=>customLoads.push(['cuePlaylist',a]),setVolume(){},pauseVideo(){},playVideo(){},destroy(){},getPlaylistIndex:()=>-1,getPlaylist:()=>undefined};
+const custom=createRadioPlayer({createPlayer:e=>{customEvents=e;return customPlayer},onStatus:s=>customStatus=s,schedule:()=>customRetries++});
+assert.ok(custom.useLink('https://youtu.be/1m0fmAJEGCE'));assert.equal(custom.hasNext,false);assert.equal(customLoads.length,0,'pasting alone never autoplays');
+custom.play();customEvents.onReady({target:customPlayer});assert.deepEqual(customLoads.at(-1),['video',{videoId:'1m0fmAJEGCE'}]);
+custom.next();assert.equal(customLoads.length,1,'single video has no Next');
+customEvents.onError({data:150});assert.equal(customRetries,0);assert.equal(custom.pending,false);assert.match(customStatus,/another link/);
+assert.equal(custom.useLink('https://evil.test'),false);assert.equal(custom.hasNext,false);
+custom.useLink(`https://music.youtube.com/playlist?list=${STATIONS[2].id}`);custom.play();customEvents.onReady({target:customPlayer});assert.equal(custom.hasNext,true);assert.equal(customLoads.at(-1)[1].list,STATIONS[2].id);
+custom.pause();custom.select(1);customEvents.onReady({target:customPlayer});assert.equal(customLoads.at(-1)[0],'cuePlaylist');assert.equal(customLoads.at(-1)[1].list,STATIONS[1].id);
+console.log('PASS: YouTube/Music links, short links, invalid URLs, single-video playback, playlist switching and return to presets.');
