@@ -1,13 +1,13 @@
 // Frequencies in Hz. Keep the original C5/E5/G5 chime and its exact reversal.
 const C=523.25,E=659.25,G=783.99;
 export const SOUNDS=[
- {id:'ascending',name:'Ascendente · original',notes:[C,E,G],step:.22,tail:.7,type:'sine'},
- {id:'descending',name:'Descendente',notes:[G,E,C],step:.22,tail:.7,type:'sine'},
- {id:'bells',name:'Campanitas',notes:[G,1046.5,E,1046.5],step:.28,tail:.85,type:'sine',overtone:2},
- {id:'drops',name:'Gotas',notes:[880,E,587.33],step:.32,tail:.22,type:'sine',slide:1.12},
- {id:'keys',name:'Teclas suaves',notes:[C,E,G,E],step:.3,tail:.5,type:'triangle'},
- {id:'embrace',name:'Abrazo',notes:[261.63,329.63,392],step:.08,tail:1.25,type:'sine',attack:.18},
- {id:'stars',name:'Estrellitas',notes:[E,G,1046.5,1318.51,1046.5],step:.17,tail:.5,type:'sine'},
+ {id:'ascending',name:'Upward · original',notes:[C,E,G],step:.22,tail:.7,type:'sine'},
+ {id:'descending',name:'Downward',notes:[G,E,C],step:.22,tail:.7,type:'sine'},
+ {id:'bells',name:'Tiny bells',notes:[G,1046.5,E,1046.5],step:.28,tail:.85,type:'sine',overtone:2},
+ {id:'drops',name:'Raindrops',notes:[880,E,587.33],step:.32,tail:.22,type:'sine',slide:1.12},
+ {id:'keys',name:'Soft keys',notes:[C,E,G,E],step:.3,tail:.5,type:'triangle'},
+ {id:'embrace',name:'Warm hug',notes:[261.63,329.63,392],step:.08,tail:1.25,type:'sine',attack:.18},
+ {id:'stars',name:'Stardust',notes:[E,G,1046.5,1318.51,1046.5],step:.17,tail:.5,type:'sine'},
 ];
 export const DEFAULT_SOUNDS={start:'ascending',rest:'descending',end:'bells'};
 export function sanitizeSounds(value){return Object.fromEntries(Object.entries(DEFAULT_SOUNDS).map(([event,fallback])=>[event,SOUNDS.some(s=>s.id===value?.[event])?value[event]:fallback]))}

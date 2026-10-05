@@ -62,7 +62,7 @@ function applyLook(save=true){
 for(const id of lookControls)$(id).addEventListener('input',()=>{settings[id]=$(id).value;applyLook()});
 $('settings-button').onclick=()=>{const open=$('settings').hidden;$('settings').hidden=!open;$('settings-button').setAttribute('aria-expanded',String(open))};
 $('reset-look').onclick=()=>{settings={...approvedLook};applyLook()};
-function syncMotion(){$('motion').textContent=motion?'Pausar movimiento':'Activar movimiento';$('motion').setAttribute('aria-pressed',String(motion))}
+function syncMotion(){$('motion').textContent=motion?'Pause motion':'Enable motion';$('motion').setAttribute('aria-pressed',String(motion))}
 $('motion').onclick=()=>{motion=!motion;syncMotion()};reduced.addEventListener('change',e=>{motion=!e.matches;syncMotion()});syncMotion();
 window.addEventListener('resize',resize);applyLook(false);
 const pageMeshes=[];let pose=[],studyMotion;
@@ -80,7 +80,7 @@ try{
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
  for(const child of scene.children)if(!existing.has(child))markForeground(child);
  renderer.shadowMap.needsUpdate=true;ready=true;$('loading').classList.add('ready');
-}catch(e){console.error(e);$('loading').textContent='No se pudo cargar el cuarto. Recarga para intentarlo de nuevo.'}
+}catch(e){console.error(e);$('loading').textContent='Our room didn’t load. Refresh to try again.'}
 const focusSession=mountFocus({onTurn:alerts.onTurn,onStart:alerts.unlock,onActivate:alerts.onActivate});
 const previewButtons=[...document.querySelectorAll('[data-study-action]')];
 for(const button of previewButtons){

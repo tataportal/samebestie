@@ -33,12 +33,12 @@ try{
  await elements.get('preview-rest').onclick();assert.equal(played.length,3,'explicit preview works when automatic sound is muted');
  elements.get('alarm-sound').checked=true;elements.get('alarm-sound').onchange();
  await elements.get('test-alarm').onclick();assert.equal(elements.get('turn-notice').hidden,false);assert.equal(delivered.length,0);assert.equal(prompts,0);
- await elements.get('notifications').onclick();assert.equal(prompts,1);assert.equal(elements.get('notifications').textContent,'Desactivar avisos del sistema');
- await elements.get('test-alarm').onclick();assert.equal(delivered.length,1);assert.match(delivered[0].body,/prueba/);
+ await elements.get('notifications').onclick();assert.equal(prompts,1);assert.equal(elements.get('notifications').textContent,'Turn off notifications');
+ await elements.get('test-alarm').onclick();assert.equal(delivered.length,1);assert.match(delivered[0].body,/Just a test/);
  const s={sessionId:'test',phase:'rest',round:1,complete:false,config:{rest:5,study:25,rounds:4}};
- alerts.onTurn(s);alerts.onTurn(s);assert.equal(delivered.length,2);assert.match(delivered[1].title,/pausa/);
+ alerts.onTurn(s);alerts.onTurn(s);assert.equal(delivered.length,2);assert.match(delivered[1].title,/break era/);
  await elements.get('notifications').onclick();alerts.onTurn({...s,round:2});assert.equal(delivered.length,2);
- FakeNotification.permission='denied';mountAlerts();assert.match(elements.get('notification-status').textContent,/bloqueados/);
- delete window.Notification;mountAlerts();assert.equal(elements.get('notifications').disabled,true);assert.match(elements.get('notification-status').textContent,/no ofrece/);
+ FakeNotification.permission='denied';mountAlerts();assert.match(elements.get('notification-status').textContent,/blocked/);
+ delete window.Notification;mountAlerts();assert.equal(elements.get('notifications').disabled,true);assert.match(elements.get('notification-status').textContent,/doesn’t support/);
 }finally{for(const key of ['window','Notification','isSecureContext','location','document','localStorage'])delete globalThis[key];if(originalNavigator)Object.defineProperty(globalThis,'navigator',originalNavigator);else delete globalThis.navigator;}
 console.log('PASS: notification opt-in, test alarm, denied/unsupported browsers, disable, duplicate suppression. OS delivery still requires browser permission.');

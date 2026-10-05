@@ -19,10 +19,10 @@ export function mountFocus({onTurn=()=>{},onStart=()=>{},onActivate=()=>{}}={}){
  function syncFields(){for(const id of ['study','rest','rounds'])$(id).value=state.config[id]}
  function render(notify=true){const was=phaseSignature(state);advance(state,Date.now());if(was!==phaseSignature(state)){save();if(notify)onTurn(state);}
   $('time').textContent=`${String(Math.floor(state.remaining/60)).padStart(2,'0')}:${String(state.remaining%60).padStart(2,'0')}`;
-  $('phase').textContent=state.complete?'Completado':`${state.phase==='study'?'Estudio':'Pausa'} · ${state.round}/${state.config.rounds}`;
-  $('start').textContent=state.running?'Pausar':state.complete?'Otra sesión':state.started?'Continuar':'Empezar';
+  $('phase').textContent=state.complete?'All done':`${state.phase==='study'?'Focus':'Break'} · ${state.round}/${state.config.rounds}`;
+  $('start').textContent=state.running?'Pause':state.complete?'Go again':state.started?'Resume':'Start';
   $('reset').hidden=!state.started&&!state.complete;
-  $('message').textContent=state.complete?'Lo lograste. Una pausita para tomar awita.':!state.started?'Un ratito para ti y lo que quieres hacer.':!state.running?'Aquí seguimos. A tu ritmo.':state.phase==='rest'?'Suelta un poquito. Un sorbito de awita.':'Una cosa a la vez. Te acompaño.';
+  $('message').textContent=state.complete?'wait, we actually did that. water break?':!state.started?'hi bestie. tiny start together?':!state.running?'we can take a sec. still here.':state.phase==='rest'?'we’re on a hydration side quest.':'lowkey, we’ve got this. one thing at a time.';
   for(const id of ['study','rest','rounds'])$(id).disabled=state.started&&!state.complete;
  }
  $('start').onclick=()=>{onStart();render();if(state.running){state.actionElapsed=Number.isFinite(state.actionStartedAt)?Math.max(0,(Date.now()-state.actionStartedAt)/1000):state.config[state.phase]*60-state.remaining;state.running=false;state.end=null;}else{if(state.complete){state=newSession(state.config);revision++;}state.running=true;state.started=true;state.actionStartedAt=Date.now();state.actionElapsed=0;state.activation=(state.activation||0)+1;state.end=Date.now()+state.remaining*1000;onActivate(state);}save();render()};

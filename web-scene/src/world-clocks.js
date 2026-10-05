@@ -1,9 +1,9 @@
 const KEY='bestie-clocks-v1';
-const cities=[['America/Lima','Lima · Perú'],['America/Los_Angeles','Berkeley · California'],['America/New_York','Nueva York · EE. UU.'],['America/Mexico_City','Ciudad de México · México'],['America/Bogota','Bogotá · Colombia'],['America/Santiago','Santiago · Chile'],['America/Argentina/Buenos_Aires','Buenos Aires · Argentina'],['America/Sao_Paulo','São Paulo · Brasil'],['Europe/Madrid','Madrid · España'],['Europe/London','Londres · Reino Unido'],['Europe/Paris','París · Francia'],['Asia/Tokyo','Tokio · Japón'],['Asia/Seoul','Seúl · Corea del Sur'],['Asia/Shanghai','Shanghái · China'],['Asia/Kolkata','Kolkata · India'],['Australia/Sydney','Sídney · Australia']];
-export function validZone(zone){try{new Intl.DateTimeFormat('es',{timeZone:zone}).format();return typeof zone==='string'&&zone.length>0}catch{return false}}
+const cities=[['America/Lima','Lima · Peru'],['America/Los_Angeles','Berkeley · California'],['America/New_York','New York · USA'],['America/Mexico_City','Mexico City · Mexico'],['America/Bogota','Bogotá · Colombia'],['America/Santiago','Santiago · Chile'],['America/Argentina/Buenos_Aires','Buenos Aires · Argentina'],['America/Sao_Paulo','São Paulo · Brazil'],['Europe/Madrid','Madrid · Spain'],['Europe/London','London · UK'],['Europe/Paris','Paris · France'],['Asia/Tokyo','Tokyo · Japan'],['Asia/Seoul','Seoul · South Korea'],['Asia/Shanghai','Shanghai · China'],['Asia/Kolkata','Kolkata · India'],['Australia/Sydney','Sydney · Australia']];
+export function validZone(zone){try{new Intl.DateTimeFormat('en-US',{timeZone:zone}).format();return typeof zone==='string'&&zone.length>0}catch{return false}}
 export function sanitizeZones(zones,fallback='America/Lima'){const valid=Array.isArray(zones)?[...new Set(zones.filter(validZone))].slice(0,3):[];return valid.length?valid:[validZone(fallback)?fallback:'America/Lima']}
 export function zoneLabel(zone){return cities.find(c=>c[0]===zone)?.[1]||zone.split('/').at(-1).replaceAll('_',' ')}
-export function clockValue(zone,now=new Date()){return {time:new Intl.DateTimeFormat('es-PE',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now),date:new Intl.DateTimeFormat('es-PE',{timeZone:zone,weekday:'short',day:'numeric',month:'short'}).format(now)}}
+export function clockValue(zone,now=new Date()){return {time:new Intl.DateTimeFormat('en-US',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now),date:new Intl.DateTimeFormat('en-US',{timeZone:zone,weekday:'short',day:'numeric',month:'short'}).format(now)}}
 export function mountClocks(){
  const $=id=>document.getElementById(id),device=Intl.DateTimeFormat().resolvedOptions().timeZone;
  let zones=sanitizeZones(null,device);try{zones=sanitizeZones(JSON.parse(localStorage.getItem(KEY)),device)}catch{}
@@ -16,10 +16,10 @@ export function mountClocks(){
   zones.forEach((zone,index)=>{
    const card=document.createElement('div');card.className='world-clock';card.dataset.zone=zone;
    const city=document.createElement('span');city.textContent=zoneLabel(zone).split(' · ')[0];const time=document.createElement('time');const date=document.createElement('small');card.append(city,time,date);$('world-clocks').append(card);
-   const row=document.createElement('div');row.className='clock-editor';const label=document.createElement('label');label.textContent=`Reloj ${index+1}`;const select=document.createElement('select');select.setAttribute('aria-label',`Ciudad del reloj ${index+1}`);
+   const row=document.createElement('div');row.className='clock-editor';const label=document.createElement('label');label.textContent=`Clock ${index+1}`;const select=document.createElement('select');select.setAttribute('aria-label',`City for clock ${index+1}`);
    for(const [value,name] of all){const option=new Option(name,value,value===zone,value===zone);option.disabled=zones.includes(value)&&value!==zone;select.add(option)}
    select.onchange=()=>{zones[index]=select.value;save();render()};label.append(select);row.append(label);
-   if(zones.length>1){const remove=document.createElement('button');remove.textContent='×';remove.setAttribute('aria-label',`Quitar reloj de ${zoneLabel(zone)}`);remove.onclick=()=>{zones.splice(index,1);save();render()};row.append(remove)}$('clock-editors').append(row);
+   if(zones.length>1){const remove=document.createElement('button');remove.textContent='×';remove.setAttribute('aria-label',`Remove clock for ${zoneLabel(zone)}`);remove.onclick=()=>{zones.splice(index,1);save();render()};row.append(remove)}$('clock-editors').append(row);
   });$('add-clock').disabled=zones.length>=3;tick();
  }
  $('add-clock').onclick=()=>{if(zones.length>=3)return;zones.push(['America/Lima','America/Los_Angeles','Europe/Madrid'].find(z=>!zones.includes(z)));save();render()};

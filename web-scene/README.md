@@ -66,3 +66,9 @@ Pruebas: mitad de turno de estudio/pausa, orientaciones alternadas, conservació
 Ambiente → Alarmas y avisos permite elegir por separado el sonido de **Inicio / retomar**, **Pausa** y **Fin de las rondas**. Hay siete opciones: el ascendente original (Do–Mi–Sol), su reverso exacto (Sol–Mi–Do), Campanitas, Gotas, Teclas suaves, Abrazo y Estrellitas. Los botones de escucha previsualizan sin modificar el timer ni enviar notificaciones, incluso si el sonido automático está desactivado. Las selecciones se guardan conservando los permisos y preferencias existentes.
 
 Inicio suena al Empezar/Continuar estudio y al volver automáticamente del descanso; Pausa al entrar/retomar descanso; Fin solo al completar todas las rondas. Pausar manualmente, reiniciar o recargar no produce una nueva alarma. Se mantiene la supresión de avisos duplicados al recuperar una pestaña suspendida. Web Audio sintetiza los sonidos localmente, sin descargas de audio. Las pruebas cubren las siete melodías, inversión exacta, selección persistente, enrutamiento por fase, silencio y preview.
+
+### English product voice
+
+The live web UI is English, including loading/error states, timer phases, notifications, animation previews, sound names, clock editors, English weekday/month formatting and accessibility labels. Clock time zones, 24-hour display, saved settings and sound IDs are preserved.
+
+Copy follows the project marketing brief: Chatito speaks as a teammate in “we,” with light lowercase internet language, no guilt and no hustle framing. Examples: “hi bestie. tiny start together?”, “lowkey, we’ve got this. one thing at a time.” and “wait, we actually did that. water break?” Utility controls and permission errors remain literal and easy to understand.

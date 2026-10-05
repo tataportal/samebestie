@@ -22,11 +22,11 @@ globalThis.setInterval=callback=>{tick=callback};Date.now=()=>now;
 try{
  const focus=mountFocus({onTurn:s=>alerts.push(structuredClone(s)),onStart:()=>starts++,onActivate:s=>activations.push(structuredClone(s))});
  elements.get('study').value=5;elements.get('rest').value=5;elements.get('rounds').value=3;elements.get('study').onchange();elements.get('start').onclick();assert.equal(starts,1);assert.equal(activations.length,1);assert.equal(activations[0].phase,'study');
- now=300000;tick();assert.equal(alerts.length,1);assert.equal(alerts[0].phase,'rest');assert.match(turnNotice(alerts[0]).title,/pausa/);
+ now=300000;tick();assert.equal(alerts.length,1);assert.equal(alerts[0].phase,'rest');assert.match(turnNotice(alerts[0]).title,/break era/);
  tick();assert.equal(alerts.length,1);
  now=600000;tick();assert.equal(alerts.length,2);assert.equal(alerts[1].round,2);
  now=1200000;tick();assert.equal(alerts.length,3);assert.equal(alerts[2].round,3);assert.equal(alerts[2].phase,'study');
- now=1500000;tick();assert.equal(alerts.length,4);assert.equal(alerts[3].complete,true);assert.match(turnNotice(alerts[3]).title,/lograste/);
+ now=1500000;tick();assert.equal(alerts.length,4);assert.equal(alerts[3].complete,true);assert.match(turnNotice(alerts[3]).title,/we did that/);
  elements.get('reset').onclick();tick();assert.equal(alerts.length,4);
  elements.get('start').onclick();now+=10000;elements.get('start').onclick();assert.equal(activations.length,2,'manual pause is silent');const remaining=focus.state.remaining;now+=500000;tick();assert.equal(focus.state.remaining,remaining);assert.equal(alerts.length,4);
  const activation=focus.state.activation;elements.get('start').onclick();assert.equal(focus.state.activation,activation+1);assert.equal(focus.state.actionStartedAt,now);assert.equal(focus.state.remaining,remaining,'Continuar does not reset minutes');assert.equal(activations.length,3,'resume sounds again');
