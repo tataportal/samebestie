@@ -79,7 +79,7 @@ export function createBookRig(scene){
   if(!take.length)continue;
   const geo=new THREE.BufferGeometry();for(const [key,attr] of Object.entries(g.attributes))geo.setAttribute(key,attr);geo.setIndex(take);geo.boundingBox=new THREE.Box3();for(const j of take)geo.boundingBox.expandByPoint(point.fromBufferAttribute(pos,j));geo.boundingSphere=geo.boundingBox.getBoundingSphere(new THREE.Sphere());
   const part=new THREE.Mesh(geo,o.material);part.name='Moving book half';part.castShadow=true;part.applyMatrix4(o.matrixWorld);part.position.sub(pivot.position);part.layers.mask=o.layers.mask;pivot.add(part);
-  const rest=g.clone();rest.setIndex(keep);o.geometry=rest;
+  g.setIndex(keep); // Keep the shared room vertex buffers; only the index list changes.
  }
  const marker=new THREE.Mesh(new THREE.BoxGeometry(.04,.004,.22),new THREE.MeshStandardMaterial({color:'#b99f67',roughness:1}));marker.name='Chatito bookmark';marker.visible=false;scene.add(marker);
  return {pivot,marker,update(close,t){pivot.rotation.z=close*Math.PI;marker.visible=t!==null&&t>.7;marker.position.set(-1.68,1.382,2.72);if(t!==null&&t<2.3){const lift=1-ease((t-.7)/1.6);marker.position.y+=.22*lift;marker.position.x+=.19*lift;}if(close>.01){const point=new THREE.Vector3(.17,.027,.29).applyAxisAngle(new THREE.Vector3(0,0,1),close*Math.PI).add(pivot.position);marker.position.copy(point);marker.rotation.z=close*Math.PI}else marker.rotation.z=0;}};
