@@ -60,3 +60,9 @@ El reloj estático se reemplaza por uno voxel articulado en la misma posición, 
 Al Empezar, al cambiar de turno y **cada vez que se pulsa Continuar**, Chatito alcanza el reloj, lo levanta, gira 180° y lo apoya antes de retomar su actividad. Continuar conserva los minutos restantes: reinicia únicamente el gesto. La activación y el tiempo del gesto se guardan con la sesión. Con movimiento desactivado la arena sigue indicando el tiempo y se omite el gesto. **Probar acciones → Voltear reloj** permite repetir la animación sin tocar el timer; la arena de esa vista previa avanza acelerada para inspeccionarla.
 
 Pruebas: mitad de turno de estudio/pausa, orientaciones alternadas, conservación de arena, pausa, reset, continuación sin reinicio, recarga a mitad de sesión y eliminación de las 184 caras triangulares del reloj antiguo. En navegador se comprobó Pausar a 24:53 → Continuar → nuevo giro con 24:51, sin volver a 25:00.
+
+### Sonidos por momento
+
+Ambiente → Alarmas y avisos permite elegir por separado el sonido de **Inicio / retomar**, **Pausa** y **Fin de las rondas**. Hay siete opciones: el ascendente original (Do–Mi–Sol), su reverso exacto (Sol–Mi–Do), Campanitas, Gotas, Teclas suaves, Abrazo y Estrellitas. Los botones de escucha previsualizan sin modificar el timer ni enviar notificaciones, incluso si el sonido automático está desactivado. Las selecciones se guardan conservando los permisos y preferencias existentes.
+
+Inicio suena al Empezar/Continuar estudio y al volver automáticamente del descanso; Pausa al entrar/retomar descanso; Fin solo al completar todas las rondas. Pausar manualmente, reiniciar o recargar no produce una nueva alarma. Se mantiene la supresión de avisos duplicados al recuperar una pestaña suspendida. Web Audio sintetiza los sonidos localmente, sin descargas de audio. Las pruebas cubren las siete melodías, inversión exacta, selección persistente, enrutamiento por fase, silencio y preview.

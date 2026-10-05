@@ -81,7 +81,7 @@ try{
  for(const child of scene.children)if(!existing.has(child))markForeground(child);
  renderer.shadowMap.needsUpdate=true;ready=true;$('loading').classList.add('ready');
 }catch(e){console.error(e);$('loading').textContent='No se pudo cargar el cuarto. Recarga para intentarlo de nuevo.'}
-const focusSession=mountFocus({onTurn:alerts.onTurn,onStart:alerts.unlock});
+const focusSession=mountFocus({onTurn:alerts.onTurn,onStart:alerts.unlock,onActivate:alerts.onActivate});
 const previewButtons=[...document.querySelectorAll('[data-study-action]')];
 for(const button of previewButtons){
  button.disabled=!ready;

@@ -14,3 +14,5 @@
 @media(max-width:640px){#world-clocks{left:18px;top:72px;gap:5px}.world-clock{min-width:145px;padding:7px 10px}.world-clock time{font-size:18px}#turn-notice{bottom:175px}}
 
 .range-ends{display:flex;justify-content:space-between;font-size:10px;color:#d1b99c}#temperature-value{font-size:11px;color:#d1b99c}
+
+.sound-choice{display:flex;align-items:end;gap:9px}.sound-choice label{flex:1;min-width:0}.sound-choice select{width:100%;font-size:12px}.sound-choice button{flex-shrink:0;padding:7px 11px;border-radius:9px;min-height:34px}

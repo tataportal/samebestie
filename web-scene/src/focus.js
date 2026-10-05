@@ -12,7 +12,7 @@ export function advance(state,now){
  }
  if(state.running)state.remaining=Math.max(0,Math.ceil((state.end-now)/1000));return state;
 }
-export function mountFocus({onTurn=()=>{},onStart=()=>{}}={}){
+export function mountFocus({onTurn=()=>{},onStart=()=>{},onActivate=()=>{}}={}){
  const $=id=>document.getElementById(id);let state=newSession(),revision=0;
  try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&['study','rest'].includes(saved.phase)&&Number.isFinite(saved.remaining)&&(!saved.running||Number.isFinite(saved.end)))state={...saved,config:sanitizeConfig(saved.config)}}catch{}
  function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}}
@@ -25,7 +25,7 @@ export function mountFocus({onTurn=()=>{},onStart=()=>{}}={}){
   $('message').textContent=state.complete?'Lo lograste. Una pausita para tomar awita.':!state.started?'Un ratito para ti y lo que quieres hacer.':!state.running?'Aquí seguimos. A tu ritmo.':state.phase==='rest'?'Suelta un poquito. Un sorbito de awita.':'Una cosa a la vez. Te acompaño.';
   for(const id of ['study','rest','rounds'])$(id).disabled=state.started&&!state.complete;
  }
- $('start').onclick=()=>{onStart();render();if(state.running){state.actionElapsed=Number.isFinite(state.actionStartedAt)?Math.max(0,(Date.now()-state.actionStartedAt)/1000):state.config[state.phase]*60-state.remaining;state.running=false;state.end=null;}else{if(state.complete){state=newSession(state.config);revision++;}state.running=true;state.started=true;state.actionStartedAt=Date.now();state.actionElapsed=0;state.activation=(state.activation||0)+1;state.end=Date.now()+state.remaining*1000;}save();render()};
+ $('start').onclick=()=>{onStart();render();if(state.running){state.actionElapsed=Number.isFinite(state.actionStartedAt)?Math.max(0,(Date.now()-state.actionStartedAt)/1000):state.config[state.phase]*60-state.remaining;state.running=false;state.end=null;}else{if(state.complete){state=newSession(state.config);revision++;}state.running=true;state.started=true;state.actionStartedAt=Date.now();state.actionElapsed=0;state.activation=(state.activation||0)+1;state.end=Date.now()+state.remaining*1000;onActivate(state);}save();render()};
  $('reset').onclick=()=>{state=newSession(state.config);revision++;save();syncFields();render()};
  for(const id of ['study','rest','rounds'])$(id).onchange=()=>{if(state.started&&!state.complete)return;state=newSession({study:$('study').value,rest:$('rest').value,rounds:$('rounds').value});save();syncFields();render()};
  syncFields();render(false);setInterval(render,250);document.addEventListener('visibilitychange',render);
