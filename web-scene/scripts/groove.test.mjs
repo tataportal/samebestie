@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import * as T from 'three';
+import {createGroove} from '../src/groove.js';
+import {createStudyMotion} from '../src/study-motion.js';
+const g=createGroove();g.setTempo(120);
+const beatSequence=[];for(let i=0;i<9;i++)beatSequence.push(g.update(i===0?0:.5).beat);
+assert.deepEqual(beatSequence,[0,1,2,3,0,1,2,3,0],'four quarter-note beats per bar');
+g.reset();g.update(2);const first=g.update(0),second=g.update(.5);assert.ok(first.pitch>second.pitch,'downbeat is stronger');
+g.reset();g.update(2);const start=g.update(0),nextBar=g.update(2);assert.ok(Math.abs(start.pitch-nextBar.pitch)<1e-9);assert.ok(Math.abs(start.roll-nextBar.roll)<1e-9);
+const frozen=g.update(0);assert.deepEqual(g.update(0),frozen,'zero delta freezes the beat');
+g.setTempo(60);assert.deepEqual(g.update(0),frozen,'tempo adjustment preserves phase');assert.equal(g.update(1).beats,frozen.beats+1);
+g.setTempo('bad');assert.equal(g.tempo,80);g.setTempo(900);assert.equal(g.tempo,180);g.setTempo(5);assert.equal(g.tempo,40);
+g.reset();assert.equal(g.update(0).beat,0);
+const scene=new T.Scene(),m=createStudyMotion(scene,[],[]),idle={focusing:false,reading:false,state:{}};
+m.preview('bop');m.setTempo(120);for(let i=0;i<180;i++)m.update(1/30,idle,true);
+const a=m.update(0,idle,false);assert.equal(a.personality.id,'bop');assert.equal(a.writing,0);assert.equal(a.drinking,0);assert.equal(a.turning,0);
+for(let i=0;i<30;i++)m.update(1/30,idle,false);assert.deepEqual(m.update(0,idle,false).personality,a.personality);
+m.preview('bop');assert.equal(m.update(0,idle,true).personality.beats,0,'Sync beat restarts at one');
+m.preview('bop');const slow=m.update(.1,idle,true,.5);assert.equal(slow.personality.beats,1,'low frame rate still tracks real elapsed beat time');
+m.preview('finish');for(let i=0;i<240;i++)m.update(1/30,idle,true);m.preview('bop');let seen=false;
+for(let i=0;i<240;i++){const a=m.update(1/30,idle,true);if(a.bookClearance>0)assert.notEqual(a.personality.id,'bop','bop waits for safe book reopening');else if(a.personality.id==='bop')seen=true;}
+assert.ok(seen);m.clearPreview();assert.notEqual(m.update(.1,idle,true).personality.id,'bop');
+console.log('PASS: 4/4 pulse, downbeat accent, bar repetition, phase-preserving tempo, sync, reduced motion and safe book transition.');

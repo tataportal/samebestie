@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createGroove} from './groove.js';
 import {createHourglass} from './hourglass.js';
 import {BOOK_BODY_RETRACTION} from './character-look.js';
 import {GESTURES,storyAt,gesturePose,createBookRig} from './personality.js';
@@ -80,6 +81,7 @@ export function createStudyMotion(scene,hero,pageMeshes){
  const clock=new StudyClock();
  const book=createBookRig(scene);let storyTime=0,phaseElapsed=0,phaseKey,gesture=null,bookClose=0,bookClearance=0,clockDelay=0,clockActivation,queuedFinish=false;
  const hourglass=createHourglass(scene);let flipping=false;
+ const groove=createGroove();
  let preview=null,previewTime=0,breakTime=0,cupLift=0,cupReach=0,restEngagement=0;
  const arms=[];
  for(const {o} of hero){
@@ -137,10 +139,12 @@ export function createStudyMotion(scene,hero,pageMeshes){
   return v(-2.265+along*.185,1.381+.003*Math.max(0,Math.sin(t*22)),2.52+line*.028+.003*Math.sin(t*25));
  };
  return {
+  get tempo(){return groove.tempo},
+  setTempo(value){groove.setTempo(value)},
   get action(){return preview||(flipping?'hourglass':gesture?.id||studyBeat(clock.time).action)},
-  preview(action){queuedFinish=action==='finish'&&bookClose>0;preview=action;previewTime=0;breakTime=0;hourglass.restartPreview();},
+  preview(action){groove.reset();queuedFinish=action==='finish'&&bookClose>0;preview=action;previewTime=0;breakTime=0;hourglass.restartPreview();},
   clearPreview(){queuedFinish=false;preview=null;previewTime=0;},
-  update(dt,session,motion){
+  update(dt,session,motion,elapsed=dt){
    const state=session.state||{};
    if(queuedFinish&&bookClose===0&&bookClearance===0)queuedFinish=false;
    const bookBusy=bookClose>0||bookClearance>0;
@@ -155,7 +159,8 @@ export function createStudyMotion(scene,hero,pageMeshes){
    if(preview&&motion&&!queuedFinish&&(!bookBusy||preview==='finish'))previewTime+=dt;
    if(!preview&&motion&&!flipping&&(!bookBusy||state.complete)&&(state.running||state.complete)){phaseElapsed+=dt;if(session.reading){const next=storyAt(storyTime+dt);if(!next||gesture||studyBeat(clock.time).action==='reading')storyTime+=dt;}}
    const priorGesture=gesture;gesture=null;
-   if(preview&&!queuedFinish&&GESTURES[preview])gesture={id:preview,time:Math.min(previewTime,GESTURES[preview])};
+   if(preview==='bop')gesture={id:'bop',time:previewTime};
+   else if(preview&&!queuedFinish&&GESTURES[preview])gesture={id:preview,time:Math.min(previewTime,GESTURES[preview])};
    else if(!preview&&!flipping&&state.started){
     if(state.complete&&phaseElapsed<11)gesture={id:'finish',time:phaseElapsed};
     else if(state.phase==='rest'&&phaseElapsed<8)gesture={id:'stretch',time:phaseElapsed};
@@ -164,6 +169,7 @@ export function createStudyMotion(scene,hero,pageMeshes){
    }
    if(priorGesture&&!gesture&&!preview&&session.reading)clock.time=Math.floor(clock.time/30)*30+27;
    let personality=gesturePose(gesture?.id,gesture?.time||0);
+   if(gesture?.id==='bop')Object.assign(personality,groove.update(motion&&!bookBusy?elapsed:0));
    let beat=clock.update(dt,{focusing:session.focusing,running:session.reading&&!flipping&&!gesture&&!bookBusy,motion,revision:session.revision});
    if(preview==='reading')beat=studyBeat(previewTime%3.5);
    if(preview==='page-turn')beat=studyBeat(3.3+Math.min(previewTime,4.7));

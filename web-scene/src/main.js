@@ -12,6 +12,7 @@ import {mountClocks} from './world-clocks.js';
 import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
 import {createFaceRig,headTransform} from './personality.js';
+import {createWardrobe} from './wardrobe.js';
 import {applyCharacterLook,CHATITO_FACE,BOOK_BODY_RETRACTION} from './character-look.js';
 import {mountReactions} from './reactions.js';
 import {SCENE_NEAR,SCENE_FAR,createSceneDepth,prepareCharacterSurface} from './render-depth.js';
@@ -70,7 +71,7 @@ function syncMotion(){$('motion').textContent=motion?'Pause motion':'Enable moti
 $('motion').onclick=()=>{motion=!motion;syncMotion()};reduced.addEventListener('change',e=>{motion=!e.matches;syncMotion()});syncMotion();
 window.addEventListener('resize',resize);applyLook(false);
 const reactions=mountReactions();
-const pageMeshes=[];let pose=[],studyMotion,faceRig,headPivot,characterLook;
+const pageMeshes=[];let pose=[],studyMotion,faceRig,headPivot,characterLook,wardrobe;
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 try{
  const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=sealed-3`);
@@ -82,9 +83,14 @@ try{
  scene.add(gltf.scene);removeStaticHourglass(gltf.scene);partitionScene(scene);
  faceRig=createFaceRig(hero.find(({o})=>o.name.includes('Head'))?.o,CHATITO_FACE);
  characterLook=applyCharacterLook(hero,faceRig);
+ wardrobe=createWardrobe(hero,faceRig,characterLook);
+ try{wardrobe.set(localStorage.getItem('bestie-outfit'))}catch{}
+ $('outfit').value=wardrobe.selected;$('outfit').disabled=false;
  for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});if(o.name.includes('Head'))headPivot=p;}
  const existing=new Set(scene.children);
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
+ try{studyMotion.setTempo(localStorage.getItem('bestie-bpm')||80)}catch{}
+ $('music-tempo').value=studyMotion.tempo;$('music-tempo').disabled=false;$('sync-beat').disabled=false;
  for(const child of scene.children)if(!existing.has(child))markForeground(child);
  renderer.shadowMap.needsUpdate=true;ready=true;$('loading').classList.add('ready');
 }catch(e){console.error(e);$('loading').textContent='Our room didn’t load. Refresh to try again.'}
@@ -94,6 +100,11 @@ for(const button of previewButtons){
  button.disabled=!ready;
  button.onclick=()=>{studyMotion.preview(button.dataset.studyAction);for(const other of previewButtons)other.setAttribute('aria-pressed',String(other===button));$('resume-actions').hidden=false;};
 }
+$('outfit').onchange=()=>{wardrobe.set($('outfit').value);renderer.shadowMap.needsUpdate=true;try{localStorage.setItem('bestie-outfit',wardrobe.selected)}catch{}};
+$('music-tempo').onchange=()=>{studyMotion.setTempo($('music-tempo').value);$('music-tempo').value=studyMotion.tempo;try{localStorage.setItem('bestie-bpm',studyMotion.tempo)}catch{}};
+$('music-tempo').oninput=()=>{if($('music-tempo').value&&$('music-tempo').validity.valid){studyMotion.setTempo($('music-tempo').value);try{localStorage.setItem('bestie-bpm',studyMotion.tempo)}catch{}}};
+$('sync-beat').onclick=()=>{$('music-tempo').onchange();document.querySelector('[data-study-action="bop"]').click()};
+const beatDots=[...document.querySelectorAll('.beat-dot')];let visibleBeat=-1;
 $('resume-actions').onclick=()=>{studyMotion.clearPreview();for(const button of previewButtons)button.setAttribute('aria-pressed','false');$('resume-actions').hidden=true;};
 document.addEventListener('visibilitychange',()=>{lastDraw=0;lastFrameTime=0});
 // Pause hidden tabs and cap animated rendering at 30 fps for a study companion.
@@ -102,9 +113,11 @@ let readBlend=0,previousFocus=false,lastShadow=0;
 function frame(now){
  requestAnimationFrame(frame);if(document.hidden||!ready)return;
  const interval=1000/30,elapsed=now-lastDraw;if(elapsed<interval)return;
- const dt=lastFrameTime?Math.min((now-lastFrameTime)/1000,.1):0;lastFrameTime=now;lastDraw=now-(elapsed%interval);
+ const elapsedTime=lastFrameTime?(now-lastFrameTime)/1000:0,dt=Math.min(elapsedTime,.1);lastFrameTime=now;lastDraw=now-(elapsed%interval);
  if(motion)phaseTime+=dt;
- const activity=studyMotion.update(dt,focusSession,motion);characterLook.update(activity);readBlend=activity.engagement;const personality=activity.personality;
+ const activity=studyMotion.update(dt,focusSession,motion,elapsedTime);
+ const currentBeat=activity.personality.id==='bop'?activity.personality.beat:-1;if(currentBeat!==visibleBeat){visibleBeat=currentBeat;beatDots.forEach((dot,i)=>dot.classList.toggle('active',i===currentBeat));}
+ characterLook.update(activity);readBlend=activity.engagement;const personality=activity.personality;
  for(const {p,name,y} of pose){
   const breath=motion?Math.sin(phaseTime*1.2)*.004:0;p.position.y=y+breath;
   p.rotation.x=0;p.rotation.y=0;p.rotation.z=personality.bodyRoll;p.position.y+=personality.bodyY;p.position.x=-1.85;p.position.z=1.84-BOOK_BODY_RETRACTION*activity.bookClearance;

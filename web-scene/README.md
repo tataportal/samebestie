@@ -93,6 +93,14 @@ Regression checks use actual adjacent surface hits for depth separation, preserv
 
 ### Approved blue-scarf character
 
-Chatito now uses the approved soft three-band cel shading, warmer feathers, larger expressive pupils, a shorter rounded bill with cream socket backing, thinner brown glasses and shorter flippers. The rebuilt voxel scarf wraps around the neck with a side knot and unequal ends; both scarf and mug are blue. The hoodie remains an unapproved draft outside the application.
+Chatito now uses the approved soft three-band cel shading, warmer feathers, larger expressive pupils, a shorter rounded bill with cream socket backing, thinner brown glasses and shorter flippers. The rebuilt voxel scarf wraps around the neck with a side knot and unequal ends; both scarf and mug are blue. This original rollout kept the hoodie separate; it is now available in the outfit selector described below.
 
 The production look edits independent decoded attributes at load time, preserving the original GLB and shared pupil geometry. Prop grips are recalibrated for the shorter flippers. The scarf folds down toward the chest during reading, and the torso retracts with the head before the book closes or reopens. Saved lighting settings, room materials and timer behavior are preserved. Regression checks cover independent attributes, eye expressions, bill backing, blue mug, pencil/mug contact and the scarf against the moving book volume; browser checks cover writing, water, frustration and the closing cover.
+
+### Outfit options and 4/4 head bop
+
+**Vibes → Outfit** offers **1 · Scarf** (the approved blue scarf) and **2 · Hoodie** (black hoodie without a scarf). Blue mug remains in both. The selection persists locally and switches existing geometry/attachments without regenerating them. The hoodie has a raised cloth hood, padded sleeves, cuffs and short drawstrings; the face and prop grip positions remain unchanged.
+
+**Head bop · 4/4** is a looping preview with four quarter-note pulses, a stronger first beat and a gentle sway over each bar. **Tempo · BPM** accepts 40–180 and persists separately from visual settings. Tempo changes preserve beat phase; **Sync beat** starts again on beat one. This is manual alignment to music playing in the user's own app, with no microphone, audio capture or automatic beat detection. Back to pomodoro restores normal choreography. Motion off freezes the beat; hidden tabs suspend animation. Book reopening retains pose ownership before the bop starts.
+
+Tests cover repeated outfit switches without accumulating attachments, original geometry restoration, both outfit accessories clearing the moving book, four-beat counts, downbeat accent, tempo changes, sync, reduced motion and queued book transitions. Browser checks cover selection persistence and the visible outfit/tempo controls.

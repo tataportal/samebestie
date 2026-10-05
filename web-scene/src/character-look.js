@@ -1,7 +1,7 @@
 import * as T from 'three';
 // Approved character look. Keep decoded source attributes isolated from edits
 // because the face, glasses and pupils initially share the same vertex buffers.
-function edit(mesh,fn){
+export function edit(mesh,fn){
  mesh.updateWorldMatrix(true,false);
  const src=mesh.geometry,g=new T.BufferGeometry(),p=src.attributes.position,c=src.attributes.color;
  for(const [name,attribute] of Object.entries(src.attributes))g.setAttribute(name,attribute);g.setIndex(src.index);
