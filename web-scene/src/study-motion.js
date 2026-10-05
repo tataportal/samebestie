@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {DESK_BLUE} from './desk-colors.js';
 import {createGroove} from './groove.js';
 import {createHourglass} from './hourglass.js';
 import {BOOK_BODY_RETRACTION} from './character-look.js';
@@ -45,7 +46,7 @@ function pencil(){
 
 function waterCup(){
  const group=new THREE.Group();group.name='Chatito water cup';
- const ceramic=new THREE.MeshStandardMaterial({color:'#478ecc',roughness:.72});
+ const ceramic=new THREE.MeshStandardMaterial({color:DESK_BLUE,roughness:.72});
  const water=new THREE.MeshStandardMaterial({color:'#8bbfc4',roughness:.25,metalness:.05});
  const block=(size,position,material=ceramic)=>{
   const m=new THREE.Mesh(new THREE.BoxGeometry(...size),material);

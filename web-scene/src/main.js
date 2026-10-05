@@ -9,6 +9,7 @@ import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 import './style.css';
 import {mountRadio} from './radio.js';
 import {mountTodo} from './todo.js';
+import {recolorHighlighter} from './desk-colors.js';
 import {repositionDeskLamp,LAMP_LIGHT_POSITION,LAMP_LIGHT_TARGET} from './desk-lamp.js';
 import {mountFocus} from './focus.js';
 import {mountClocks} from './world-clocks.js';
@@ -83,7 +84,7 @@ try{
  shader.vertexShader='varying float cozyWorldZ;\n'+shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\ncozyWorldZ=(modelMatrix*vec4(transformed,1.)).z;');
  shader.fragmentShader='uniform float frontLampStrength;uniform vec3 frontLampTint;varying float cozyWorldZ;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance*=mix(vec3(1.),frontLampTint*frontLampStrength,smoothstep(1.2,1.8,cozyWorldZ));');};
  }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){prepareCharacterSurface(o);if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
- scene.add(gltf.scene);removeStaticHourglass(gltf.scene);partitionScene(scene);repositionDeskLamp(scene);
+ scene.add(gltf.scene);removeStaticHourglass(gltf.scene);recolorHighlighter(scene);partitionScene(scene);repositionDeskLamp(scene);
  faceRig=createFaceRig(hero.find(({o})=>o.name.includes('Head'))?.o,CHATITO_FACE);
  characterLook=applyCharacterLook(hero,faceRig);
  wardrobe=createWardrobe(hero,faceRig,characterLook);
