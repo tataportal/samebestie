@@ -23,11 +23,10 @@ export function mountRadio(){
  <div class="radio-controls"><button id="radio-play" aria-label="Play radio">▶ <span>Play</span></button><button id="radio-next" aria-label="Next track" disabled>Next ›</button><label>Vol<input id="radio-volume" aria-label="Radio volume" type="range" min="0" max="100" value="45"></label></div>
  <a id="radio-link" href="https://music.youtube.com/playlist?list=${STATIONS[0].id}" target="_blank" rel="noopener noreferrer">Open in YouTube Music ↗</a><section id="ambient-mixer" aria-label="Ambient sound mixer"></section>`;
  document.body.append(panel);
- const ambient=mountAmbient($('ambient-mixer'));
+ mountAmbient($('ambient-mixer'));
  let selected=0,request=0;
  try{const saved=Number(localStorage.getItem('bestie-radio-station'));if(STATIONS[saved])selected=saved;$('radio-volume').value=localStorage.getItem('bestie-radio-volume')??45}catch{}
  const controller=createRadioPlayer({
-  canPlay:()=>!panel.hidden&&!document.hidden&&!$('radio-screen').hidden,
   onStatus:text=>{$('radio-status').textContent=text;syncPlayControl()},
   onPlaying:playing=>{panel.classList.toggle('on-air',playing);syncPlayControl()},
   createPlayer:events=>{
@@ -47,17 +46,16 @@ export function mountRadio(){
  $('radio-play').onclick=async()=>{
   if(controller.playing||controller.pending){controller.pause();return}
   const token=++request;$('radio-play').disabled=true;$('radio-status').textContent='Tuning in…';
-  try{await youtubeAPI();if(token!==request||panel.hidden||document.hidden)return;$('radio-screen').hidden=false;panel.classList.add('expanded');controller.play()}
+  try{await youtubeAPI();if(token!==request)return;$('radio-screen').hidden=false;panel.classList.add('expanded');controller.play()}
   catch{if(token===request)$('radio-status').textContent='YouTube couldn’t connect. Try again or open the playlist.'}
   finally{$('radio-play').disabled=false}
  };
  $('radio-next').onclick=()=>controller.next();
  $('radio-volume').oninput=()=>{controller.volume($('radio-volume').value);try{localStorage.setItem('bestie-radio-volume',$('radio-volume').value)}catch{}};
- function close(){request++;controller.close();ambient.stopAll();panel.hidden=true;$('radio-player-slot').innerHTML='<div class="radio-idle"><span>♪</span>Your little soundtrack<small>Pick a station, then Play.</small></div>';panel.classList.remove('expanded');$('radio-next').disabled=true;$('radio-button').setAttribute('aria-expanded','false')}
+ // Closing controls is presentation only: keep the iframe, queue, and sound
+ // layers alive. Playback stops only through their explicit audio controls.
+ function close(){panel.hidden=true;$('radio-button').setAttribute('aria-expanded','false')}
  $('radio-close').onclick=()=>{close();$('radio-button').focus()};
- $('radio-button').onclick=()=>{if(!panel.hidden){close();return}$('settings').hidden=true;$('settings-button').setAttribute('aria-expanded','false');panel.hidden=false;$('radio-button').setAttribute('aria-expanded','true');$('radio-status').textContent='Ready when you are'};
- document.addEventListener('visibilitychange',()=>{if(document.hidden){request++;controller.pause()}});
- // Do not keep playing if a small viewport scrolls the player out of view.
- const observer=new IntersectionObserver(([entry])=>{if(!entry.isIntersecting&&(controller.playing||controller.pending))controller.pause()});observer.observe($('radio-screen'));
+ $('radio-button').onclick=()=>{if(!panel.hidden){close();return}$('settings').hidden=true;$('settings-button').setAttribute('aria-expanded','false');panel.hidden=false;$('radio-button').setAttribute('aria-expanded','true')};
  return {close};
 }
