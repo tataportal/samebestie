@@ -7,6 +7,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 import './style.css';
+import {mountRadio} from './radio.js';
 import {mountFocus} from './focus.js';
 import {mountClocks} from './world-clocks.js';
 import {mountAlerts} from './alerts.js';
@@ -20,7 +21,7 @@ import {removeStaticHourglass} from './hourglass.js';
 import {CozyBokehPass} from './bokeh.js';
 import {LayerRenderPass,partitionScene,markForeground,BACKGROUND,FOREGROUND} from './scene-layers.js';
 const $=id=>document.getElementById(id);
-mountClocks();const alerts=mountAlerts();
+mountClocks();const alerts=mountAlerts();const radio=mountRadio();
 const scene=new THREE.Scene();scene.background=new THREE.Color('#463327');
 const camera=new THREE.PerspectiveCamera(39.6,1,SCENE_NEAR,SCENE_FAR);camera.position.set(-1.85,1.95,5.6);camera.lookAt(-1.85,1.95,2.34);
 const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
@@ -65,7 +66,7 @@ function applyLook(save=true){
  $('temperature-value').textContent=`${kelvin} K`;
  grain.uniforms.vignette.value=Number(settings.vignette);dof.uniforms.maxblur.value=Number(settings.bokeh);dof.uniforms.backgroundBrightness.value=Number(settings.background);dof.enabled=Number(settings.bokeh)>.0001||Number(settings.background)!==1;bloom.strength=Number(settings.bloom);grain.uniforms.amount.value=Number(settings.grain);for(const id of lookControls)$(id).value=settings[id];resize();if(save)try{localStorage.setItem('bestie-look',JSON.stringify(settings))}catch{}}
 for(const id of lookControls)$(id).addEventListener('input',()=>{settings[id]=$(id).value;applyLook()});
-$('settings-button').onclick=()=>{const open=$('settings').hidden;$('settings').hidden=!open;$('settings-button').setAttribute('aria-expanded',String(open))};
+$('settings-button').onclick=()=>{const open=$('settings').hidden;if(open)radio.close();$('settings').hidden=!open;$('settings-button').setAttribute('aria-expanded',String(open))};
 $('reset-look').onclick=()=>{settings={...approvedLook};applyLook()};
 function syncMotion(){$('motion').textContent=motion?'Pause motion':'Enable motion';$('motion').setAttribute('aria-pressed',String(motion))}
 $('motion').onclick=()=>{motion=!motion;syncMotion()};reduced.addEventListener('change',e=>{motion=!e.matches;syncMotion()});syncMotion();
