@@ -6,12 +6,12 @@ import {BOOK_BODY_RETRACTION} from './character-look.js';
 import {GESTURES,storyAt,gesturePose,createBookRig} from './personality.js';
 
 const clamp=THREE.MathUtils.clamp;
-const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
+import {smooth as ease,poseTrack} from './motion-curves.js';
 const v=(x,y,z)=>new THREE.Vector3(x,y,z);
 const CYCLE=30;
 export function studyBeat(time){
  const cycle=Math.floor(time/CYCLE),t=time%CYCLE;
- const turn=ease((t-4)/4);
+ const turn=poseTrack(t,[[4,0],[4.7,.06],[5.15,.06],[6.45,.86],[8,1]]);
  return {cycle,t,turn:cycle%2?1-turn:turn,
   action:t<4?'reading':t<8?'page-turn':t<10?'reading':t<12?'pick-up':t<16?'pencil-play':t<24?'writing':t<26?'put-down':'reading',
   reach:ease((t-3.3)/.7)*(1-ease((t-5.0)/.8)),
@@ -137,7 +137,11 @@ export function createStudyMotion(scene,hero,pageMeshes){
  ink.visible=false;
  const writingTip=t=>{
   const p=clamp((t-17)/6.1,0,.9999),line=Math.floor(p*3),along=(p*3)%1;
-  return v(-2.265+along*.185,1.381+.003*Math.max(0,Math.sin(t*22)),2.52+line*.028+.003*Math.sin(t*25));
+  const returning=line<2&&along>.84,returnPhase=ease((along-.84)/.16);
+  const stroke=Math.min(1,along/.84),word=stroke*5;
+  const inkX=(Math.floor(word)+ease(word%1))/5;
+  const x=returning?1-returnPhase:inkX;
+  return v(-2.265+x*.185,1.381+(returning?.035*Math.sin(returnPhase*Math.PI):.003*Math.max(0,Math.sin(t*22))),2.52+(line+(returning?returnPhase:0))*.028+.003*Math.sin(t*25));
  };
  return {
   get tempo(){return groove.tempo},
@@ -228,7 +232,7 @@ export function createStudyMotion(scene,hero,pageMeshes){
    }
    const play=ease((t-12)/.4)*(1-ease((t-15.5)/.5));
    const air=v(-2.28+.02*Math.sin(t*2)*play,1.61+.025*Math.sin(t*3)*play,2.51);
-   const airQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.14*Math.sin(t*4)*play,0,.42+.65*Math.sin(t*4.8)*play));
+   const airQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.14*Math.sin(t*4)*play,0,.42+.65*Math.sin(t*4.8+.4*Math.sin(t*2.4))*play));
    const writeAxis=v(-.24,.95,-.20).normalize();
    const tip=writingTip(t),writeGrip=tip.clone().addScaledVector(writeAxis,.147);
    const writeQ=new THREE.Quaternion().setFromUnitVectors(v(0,1,0),writeAxis);
@@ -274,7 +278,7 @@ export function createStudyMotion(scene,hero,pageMeshes){
    ink.visible=!finishing&&!returning&&e>.95&&visibleMarks>0&&bookClose<.05;
    for(let i=0;i<marks.length;i++)marks[i].visible=i<visibleMarks;
    return {personality,bookClearance,time:clock.time,engagement:e,turning:beat.reach*e,writing:beat.write*e,drinking:cupLift,flipping:timerReach,
-    headYaw:personality.yaw+e*(.045*Math.sin(beat.t*.8)+.07*beat.write)-.18*cupLift+timer.headYaw*(preview&&preview!=='hourglass'?0:1),
+    headYaw:personality.yaw+e*(poseTrack(beat.t%4,[[0,-.04],[2.8,.04],[3.2,.04],[4,-.04]])+.07*beat.write)-.18*cupLift+timer.headYaw*(preview&&preview!=='hourglass'?0:1),
     active:motion&&(returning||!!preview||!!gesture||flipping||session.reading||(restActive&&restRunning&&breakTime<9))};
   }
  };

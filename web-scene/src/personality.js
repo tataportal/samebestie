@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-const clamp=THREE.MathUtils.clamp;
-export const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
+import {smooth,poseTrack,gestureWeight} from './motion-curves.js';
+export const ease=smooth;
 export const GESTURES={reread:7,glasses:5,thinking:7,aha:5,window:8,frustrated:9,cheek:9,stretch:8,breathe:20,finish:11,blank:6,nervous:6};
 // Unequal quiet gaps, then a different ordering on the next lap. No reaction spam.
 const stories=[
@@ -14,22 +14,24 @@ export function storyAt(time){
  return null;
 }
 export function gesturePose(id,t){
- const duration=GESTURES[id]||1,w=ease(t/.6)*(1-ease((t-duration+.8)/.8));
+ const duration=GESTURES[id]||1;
+ const timing={aha:[.32,1],window:[1.3,1.8],cheek:[1.2,1.6],stretch:[1.5,1.8],frustrated:[.8,1.7],nervous:[.45,1.1],breathe:[.6,.8]}[id]||[.65,1.25];
+ const w=gestureWeight(t,duration,...timing);
  const p={id,t,w,pitch:0,yaw:0,roll:0,x:0,y:0,z:0,bodyY:0,bodyRoll:0,eye:1,gazeX:0,gazeY:0,glasses:0,close:0,bubble:null};
  const bubble=(kind,start,length=1.65)=>{if(t>=start&&t<start+length)p.bubble={kind,age:t-start,duration:length}};
  switch(id){
-  case 'reread':p.pitch=.13*w;p.yaw=Math.sin(t*2.3)*.09*w;p.roll=.06*w;p.z=.065*w;p.gazeX=Math.sin(t*2.3)*.014*w;bubble('question',.8);bubble('questions',3.3,2);break;
+  case 'reread':p.pitch=.13*w;p.yaw=poseTrack(t,[[0,0],[.45,-.025],[1.15,.085],[1.7,.085],[2.6,-.07],[3.1,-.07],[3.6,.04],[5,.04],[6.4,0]])*w;p.roll=.06*w;p.z=.065*w;p.gazeX=p.yaw*.16;bubble('question',.8);bubble('questions',3.3,2);break;
   case 'glasses':p.glasses=-.036*ease(t/.8)*(1-ease((t-1.6)/.7));p.pitch=.045*w;p.eye=1-.4*w;break;
   case 'thinking':p.pitch=-.18*w;p.yaw=-.09*w;p.gazeY=.014*w;bubble('dots',1.2);break;
-  case 'aha':{const pop=ease(t/.45)*(1-ease((t-1)/.5));p.pitch=-.15*pop;p.eye=1+.12*pop;p.y=.047*pop;p.bodyY=.025*pop;p.yaw=.02*Math.sin(t*14)*w;bubble('idea',.25);break;}
-  case 'window':p.yaw=-.34*w;p.pitch=-.07*w;p.gazeX=-.025*w;p.eye=1-.25*ease((t-6)/.3)*(1-ease((t-6.3)/.3));break;
-  case 'frustrated':{const slump=ease((t-1.8)/1.4)*(1-ease((t-6)/1.6));p.pitch=.055*w;p.roll=.04*Math.sin(t*4)*w*(1-slump);p.y=-.045*slump;p.z=.015*slump;p.bodyY=-.035*slump;p.eye=1-.68*slump;bubble('scribble',2,2.2);break;}
+  case 'aha':{const pop=poseTrack(t,[[0,0],[.16,-.2],[.40,1],[.66,.72],[.85,.82],[1.5,0]]);p.pitch=-.15*pop;p.eye=1+.12*pop;p.y=.047*pop;p.bodyY=.025*pop;p.yaw=.02*Math.sin(t*14)*Math.exp(-Math.max(0,t-.4)*3)*w;bubble('idea',.25);break;}
+  case 'window':p.yaw=poseTrack(t,[[0,0],[.22,.025],[1.5,-.34],[5.8,-.34],[8,0]]);p.pitch=-.07*w;p.gazeX=-.025*w;p.eye=1-.25*ease((t-6)/.3)*(1-ease((t-6.3)/.3));break;
+  case 'frustrated':{const slump=ease((t-1.8)/1.4)*(1-ease((t-6)/1.6));p.pitch=.055*w;p.roll=poseTrack(t,[[0,0],[.4,-.018],[.65,.05],[1,.05],[1.3,-.045],[1.7,.015],[2.4,0]])*w*(1-slump);p.y=-.045*slump;p.z=.015*slump;p.bodyY=-.035*slump;p.eye=1-.68*slump;bubble('scribble',2,2.2);break;}
   case 'cheek':p.roll=.16*w;p.x=-.033*w;p.y=-.035*w;p.eye=1-.4*w-.5*ease((t-3)/.5)*(1-ease((t-3.6)/.6));p.pitch=.02*w;break;
   case 'stretch':p.bodyY=.06*w;p.y=.065*w;p.roll=.09*Math.sin(t*1.2)*w;p.bodyRoll=.025*Math.sin(t*1.2)*w;p.pitch=-.08*w;p.eye=1-.9*w;break;
   case 'breathe':{const phase=t%10,breath=phase<4?ease(phase/4):1-ease((phase-4)/6);p.bodyY=.03*breath*w;p.y=.03*breath*w;p.eye=1-.93*w;p.pitch=-.035*w;p.bubble={kind:phase<4?'inhale':'exhale',age:phase<4?phase:phase-4,duration:phase<4?4:6,breath};break;}
-  case 'finish':{p.close=ease((t-2.3)/2.4);const dance=ease((t-5)/.6)*(1-ease((t-9.5)/1));p.y=Math.abs(Math.sin((t-5)*5))*.045*dance;p.roll=Math.sin((t-5)*5)*.07*dance;p.bodyRoll=p.roll*.55;p.eye=1-.35*dance;bubble('sparkles',5.3,2);break;}
+  case 'finish':{p.close=ease((t-2.3)/2.4);const dance=ease((t-5)/.6)*(1-ease((t-9.5)/1));p.y=Math.pow(Math.abs(Math.sin((t-5)*5)),.75)*.045*dance;p.roll=Math.sin((t-5)*5)*.07*dance;p.bodyRoll=p.roll*.55;p.eye=1-.35*dance;bubble('sparkles',5.3,2);break;}
   case 'blank':p.eye=1-.2*w;p.pitch=.03*w;bubble('dots',1,2);break;
-  case 'nervous':p.yaw=.065*Math.sin(t*3)*w;p.eye=1-.15*w;p.y=-.014*w;bubble('sweat',1.1,2);break;
+  case 'nervous':p.yaw=poseTrack(t,[[0,0],[.55,-.065],[.95,-.065],[1.3,.06],[1.8,.06],[2.25,-.04],[3.2,-.04],[3.6,.035],[4.2,.035],[5.5,0]])*w;p.eye=1-.15*w;p.y=-.014*w;bubble('sweat',1.1,2);break;
  }
  return p;
 }

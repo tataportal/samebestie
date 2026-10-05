@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-const clamp=THREE.MathUtils.clamp,ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
+import {smooth as ease} from './motion-curves.js';
+const clamp=THREE.MathUtils.clamp;
 export const HOURGLASS_HOME=new THREE.Vector3(-.97,1.4744,2.24);
 export const FLIP_DURATION=5.1;
 // Exact bounds of the original Sand timer objects in the Blender source,
