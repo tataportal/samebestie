@@ -34,7 +34,7 @@ export function createAmbientMixer({createContext=()=>new (window.AudioContext||
  return {
   setActive,
   toggle:id=>{const t=tracks.get(id);if(t)return setActive(id,!t.active)},
-  setVolume(id,value){const t=tracks.get(id);if(!t)return;const n=Number(value);if(!Number.isFinite(n))return;t.volume=Math.max(0,Math.min(1,n));if(t.gain)t.gain.gain.setTargetAtTime(t.volume,context.currentTime,.04);emit(t)},
+  setVolume(id,value,{activate=false}={}){const t=tracks.get(id);if(!t)return;const n=Number(value);if(!Number.isFinite(n))return;t.volume=Math.max(0,Math.min(1,n));if(t.gain)t.gain.gain.setTargetAtTime(t.volume,context.currentTime,.04);emit(t);if(activate&&t.active!==(t.volume>0))return setActive(id,t.volume>0)},
   stopAll(){for(const t of tracks.values())setActive(t.id,false)},
  };
 }
@@ -47,6 +47,6 @@ export function mountAmbient(container){
   container.querySelector('#ambient-stop').disabled=active.size===0;
   container.querySelector('#ambient-status').textContent=errors.size?'A sound couldn’t load. Tap its name to retry.':loading.size?'Loading your sound layers…':active.size?`${active.size} layer${active.size===1?'':'s'} on · your little atmosphere`:'Layer a little atmosphere.';
  }});
- for(const t of AMBIENT_TRACKS){const button=container.querySelector(`[data-ambient="${t.id}"]`),slider=container.querySelector(`[data-ambient-volume="${t.id}"]`);button.onclick=()=>mixer.toggle(t.id);const volume=Number(saved[t.id]);if(Number.isFinite(volume)&&saved[t.id]!=null)slider.value=Math.round(Math.max(0,Math.min(1,volume))*100);mixer.setVolume(t.id,Number(slider.value)/100);slider.oninput=()=>{saved[t.id]=Number(slider.value)/100;mixer.setVolume(t.id,saved[t.id]);try{localStorage.setItem('bestie-ambient-volumes',JSON.stringify(saved))}catch{}}}
+ for(const t of AMBIENT_TRACKS){const button=container.querySelector(`[data-ambient="${t.id}"]`),slider=container.querySelector(`[data-ambient-volume="${t.id}"]`);button.onclick=()=>mixer.toggle(t.id);const volume=Number(saved[t.id]);if(Number.isFinite(volume)&&saved[t.id]!=null)slider.value=Math.round(Math.max(0,Math.min(1,volume))*100);mixer.setVolume(t.id,Number(slider.value)/100);slider.oninput=()=>{saved[t.id]=Number(slider.value)/100;mixer.setVolume(t.id,saved[t.id],{activate:true});try{localStorage.setItem('bestie-ambient-volumes',JSON.stringify(saved))}catch{}}}
  container.querySelector('#ambient-stop').onclick=()=>mixer.stopAll();return mixer;
 }

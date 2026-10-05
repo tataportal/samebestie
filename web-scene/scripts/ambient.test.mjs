@@ -16,3 +16,21 @@ const retry=mixer.setActive('forest',true);await flush();requests.shift()(respon
 const one=mixer.setActive('cafe',true);await flush();mixer.setActive('cafe',false);const two=mixer.setActive('cafe',true);await flush();const before=sources.length;requests.shift()(response);await Promise.all([one,two]);assert.equal(sources.length,before+1,'rapid off/on creates one loop only');
 mixer.stopAll();
 console.log('PASS: ambient mixing, lazy loading, shared context, cached decode, independent volume, late-load cancellation, rapid toggles, stop all and error retry.');
+
+const countBeforeSlider=sources.length;
+mixer.setVolume('rain',0);
+await mixer.setVolume('rain',.25,{activate:true});
+assert.equal(events.at(-1).status,'on','raising the slider starts the layer');
+assert.equal(sources.length,countBeforeSlider+1);
+await mixer.setVolume('rain',.55,{activate:true});
+assert.equal(sources.length,countBeforeSlider+1,'dragging does not restart the loop');
+await mixer.setVolume('rain',0,{activate:true});
+assert.equal(events.at(-1).active,false,'zero turns the layer off');
+assert.ok(sources.at(-1).stopped);
+mixer.setVolume('rain',.3);
+assert.equal(events.at(-1).active,false,'restored volumes stay silent');
+const loadingSlider=mixer.setVolume('fireplace',.2,{activate:true});
+await flush();await mixer.setVolume('fireplace',0,{activate:true});
+requests.shift()(response);await loadingSlider;
+assert.equal(sources.length,countBeforeSlider+1,'zero cancels a pending slider start');
+console.log('PASS: slider start, zero stop, uninterrupted volume changes and silent restoration.');
