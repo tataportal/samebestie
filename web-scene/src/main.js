@@ -11,6 +11,8 @@ import {mountFocus} from './focus.js';
 import {mountClocks} from './world-clocks.js';
 import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
+import {createFaceRig} from './personality.js';
+import {mountReactions} from './reactions.js';
 import {removeStaticHourglass} from './hourglass.js';
 import {CozyBokehPass} from './bokeh.js';
 import {LayerRenderPass,partitionScene,markForeground,BACKGROUND,FOREGROUND} from './scene-layers.js';
@@ -65,7 +67,8 @@ $('reset-look').onclick=()=>{settings={...approvedLook};applyLook()};
 function syncMotion(){$('motion').textContent=motion?'Pause motion':'Enable motion';$('motion').setAttribute('aria-pressed',String(motion))}
 $('motion').onclick=()=>{motion=!motion;syncMotion()};reduced.addEventListener('change',e=>{motion=!e.matches;syncMotion()});syncMotion();
 window.addEventListener('resize',resize);applyLook(false);
-const pageMeshes=[];let pose=[],studyMotion;
+const reactions=mountReactions();
+const pageMeshes=[];let pose=[],studyMotion,faceRig,headPivot;
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 try{
  const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/cozy-room.glb?v=sealed-3`);
@@ -75,7 +78,8 @@ try{
  shader.fragmentShader='uniform float frontLampStrength;uniform vec3 frontLampTint;varying float cozyWorldZ;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance*=mix(vec3(1.),frontLampTint*frontLampStrength,smoothstep(1.2,1.8,cozyWorldZ));');};
  }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
  scene.add(gltf.scene);removeStaticHourglass(gltf.scene);partitionScene(scene);
- for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});}
+ faceRig=createFaceRig(hero.find(({o})=>o.name.includes('Head'))?.o);
+ for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});if(o.name.includes('Head'))headPivot=p;}
  const existing=new Set(scene.children);
  studyMotion=createStudyMotion(scene,hero,pageMeshes);
  for(const child of scene.children)if(!existing.has(child))markForeground(child);
@@ -97,12 +101,14 @@ function frame(now){
  const interval=1000/30,elapsed=now-lastDraw;if(elapsed<interval)return;
  const dt=lastFrameTime?Math.min((now-lastFrameTime)/1000,.1):0;lastFrameTime=now;lastDraw=now-(elapsed%interval);
  if(motion)phaseTime+=dt;
- const activity=studyMotion.update(dt,focusSession,motion);readBlend=activity.engagement;
+ const activity=studyMotion.update(dt,focusSession,motion);readBlend=activity.engagement;const personality=activity.personality;
  for(const {p,name,y} of pose){
   const breath=motion?Math.sin(phaseTime*1.2)*.004:0;p.position.y=y+breath;
-  p.rotation.x=0;p.rotation.y=0;p.position.x=-1.85;p.position.z=1.84;
-  if(name.includes('Head')){p.rotation.x=readBlend*.18+activity.writing*.04-activity.turning*.08-activity.drinking*.10+activity.flipping*.04;p.rotation.y=activity.headYaw;p.position.y+=activity.turning*.018;p.position.x-=activity.drinking*.05;p.position.z+=readBlend*.045-activity.turning*.10;}
+  p.rotation.x=0;p.rotation.y=0;p.rotation.z=personality.bodyRoll;p.position.y+=personality.bodyY;p.position.x=-1.85;p.position.z=1.84;
+  if(name.includes('Head')){p.rotation.x=readBlend*.18+activity.writing*.04-activity.turning*.08-activity.drinking*.10+activity.flipping*.04;p.rotation.y=activity.headYaw;p.position.y+=activity.turning*.018;p.position.x-=activity.drinking*.05;p.position.z+=readBlend*.045-activity.turning*.10;
+   p.rotation.x+=personality.pitch;p.rotation.z=personality.roll;p.position.x+=personality.x;p.position.y+=personality.y-personality.bodyY;p.position.z+=personality.z;}
  }
+ const blinkT=phaseTime%5.7,blink=motion?Math.max(0,1-Math.abs(blinkT-.18)/.14):0;faceRig.update(personality,blink);reactions.update(personality,headPivot,camera,motion);
  // This camera is always the intimate focus view; Bao stays hidden.
  if(previousFocus!==focusSession.focusing){renderer.shadowMap.needsUpdate=true;previousFocus=focusSession.focusing;}
  if(activity.active&&now-lastShadow>200){renderer.shadowMap.needsUpdate=true;lastShadow=now;}

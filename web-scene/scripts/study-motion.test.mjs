@@ -59,7 +59,8 @@ controller.clearPreview();
 for(let i=0;i<100;i++)controller.update(.1,{focusing:false,reading:false,state:{}},true);
 assert.ok(Math.abs(cup.position.y-1.3695)<1e-6,'Leaving preview restores the mug to the desktop');
 for(const state of [{started:true,phase:'rest',running:true,complete:false},{started:true,phase:'study',running:false,complete:true}]){
- for(let i=0;i<40;i++)controller.update(.1,{focusing:false,reading:false,state},true);
+ // Stretch first on break; bookmark/close/celebrate first on completion.
+ for(let i=0;i<(state.complete?150:120);i++)controller.update(.1,{focusing:false,reading:false,state},true);
  assert.ok(cup.position.y>1.6,'Both a break and final completion trigger the water reminder');
  for(let i=0;i<70;i++)controller.update(.1,{focusing:false,reading:false,state},true);
  assert.ok(Math.abs(cup.position.y-1.3695)<1e-5,'Mug is put back after drinking');

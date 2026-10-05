@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createHourglass} from './hourglass.js';
+import {GESTURES,storyAt,gesturePose,createBookRig} from './personality.js';
 
 const clamp=THREE.MathUtils.clamp;
 const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
@@ -76,6 +77,7 @@ export function aimFlipper(pivot,restGrip,target,shoulder,thickness=1){
 
 export function createStudyMotion(scene,hero,pageMeshes){
  const clock=new StudyClock();
+ const book=createBookRig(scene);let storyTime=0,phaseElapsed=0,phaseKey,gesture=null,bookClose=0;
  const hourglass=createHourglass(scene);let flipping=false;
  let preview=null,previewTime=0,breakTime=0,cupLift=0,cupReach=0,restEngagement=0;
  const arms=[];
@@ -134,20 +136,42 @@ export function createStudyMotion(scene,hero,pageMeshes){
   return v(-2.265+along*.185,1.381+.003*Math.max(0,Math.sin(t*22)),2.52+line*.028+.003*Math.sin(t*25));
  };
  return {
-  get action(){return preview||(flipping?'hourglass':studyBeat(clock.time).action)},
+  get action(){return preview||(flipping?'hourglass':gesture?.id||studyBeat(clock.time).action)},
   preview(action){preview=action;previewTime=0;breakTime=0;hourglass.restartPreview();},
   clearPreview(){preview=null;previewTime=0;},
   update(dt,session,motion){
    const state=session.state||{};
    const timer=hourglass.update(dt,state,motion&&(!preview||preview==='hourglass'),preview==='hourglass');flipping=timer.flipping&&!preview||preview==='hourglass';
-   let beat=clock.update(dt,{focusing:session.focusing,running:session.reading&&!flipping,motion,revision:session.revision});
+   const nextKey=`${session.revision}:${state.sessionId}:${state.started}:${state.phase}:${state.round}:${state.complete}`;
+   if(nextKey!==phaseKey){phaseElapsed=0;phaseKey=nextKey;if(!session.focusing)storyTime=0;}
    if(preview&&motion)previewTime+=dt;
+   if(!preview&&motion&&!flipping&&(state.running||state.complete)){phaseElapsed+=dt;if(session.reading){const next=storyAt(storyTime+dt);if(!next||gesture||studyBeat(clock.time).action==='reading')storyTime+=dt;}}
+   const priorGesture=gesture;gesture=null;
+   if(preview&&GESTURES[preview])gesture={id:preview,time:Math.min(previewTime,GESTURES[preview])};
+   else if(!preview&&!flipping&&state.started){
+    if(state.complete&&phaseElapsed<11)gesture={id:'finish',time:phaseElapsed};
+    else if(state.phase==='rest'&&phaseElapsed<8)gesture={id:'stretch',time:phaseElapsed};
+    else if(state.phase==='rest'&&phaseElapsed>=20&&phaseElapsed<40)gesture={id:'breathe',time:phaseElapsed-20};
+    else if(session.focusing)gesture=storyAt(storyTime);
+   }
+   if(priorGesture&&!gesture&&!preview&&session.reading)clock.time=Math.floor(clock.time/30)*30+27;
+   const personality=gesturePose(gesture?.id,gesture?.time||0);
+   let beat=clock.update(dt,{focusing:session.focusing,running:session.reading&&!flipping&&!gesture,motion,revision:session.revision});
    if(preview==='reading')beat=studyBeat(previewTime%3.5);
    if(preview==='page-turn')beat=studyBeat(3.3+Math.min(previewTime,4.7));
    if(preview==='pencil-play')beat=studyBeat(previewTime<2?10+previewTime:12+(previewTime-2)%3.5);
    if(preview==='writing')beat=studyBeat(16+Math.min(previewTime,7.3));
-   const restActive=preview==='water'||(!preview&&!flipping&&(state.complete||(state.started&&state.phase==='rest')));
-   const studying=!flipping&&(preview?preview!=='water':session.focusing);
+   // Freeze the open leaf during a reaction; all non-writing gestures put the pen down.
+   if(gesture){beat={...beat,t:0,turn:pageProgress,reach:0,hold:0,write:0};
+    if(gesture.id==='thinking'||gesture.id==='blank'){beat.hold=personality.w;beat.t=13;}
+    if(gesture.id==='aha'&&gesture.time>1.5){beat={...beat,t:17+(gesture.time-1.5)*1.6,hold:ease((gesture.time-1.5)/.65)*personality.w,write:ease((gesture.time-2)/.5)*personality.w};}
+   }
+   const finishing=gesture?.id==='finish'||(!preview&&state.complete);
+   bookClose=THREE.MathUtils.damp(bookClose,finishing?personality.close||(!gesture?1:0):0,12,dt);
+   book.update(bookClose,gesture?.id==='finish'?gesture.time:!preview&&state.complete?11:null);
+   for(const {o} of pages)o.visible=bookClose<.65;
+   const restActive=preview==='water'||(!preview&&!flipping&&!gesture&&(state.complete||(state.started&&state.phase==='rest')));
+   const studying=!flipping&&(preview?preview!=='water':session.focusing)||!!gesture;
    const restRunning=preview==='water'||state.complete||state.running;
    if(!restActive)breakTime=0;
    else if(motion&&restRunning)breakTime+=dt;
@@ -179,20 +203,37 @@ export function createStudyMotion(scene,hero,pageMeshes){
    const tip=writingTip(t),writeGrip=tip.clone().addScaledVector(writeAxis,.147);
    const writeQ=new THREE.Quaternion().setFromUnitVectors(v(0,1,0),writeAxis);
    const hold=beat.hold*e;
+   if(gesture?.id==='thinking'){air.set(-2.03,1.78,2.56);airQ.setFromEuler(new THREE.Euler(0,0,-.4));}
+   if(gesture?.id==='blank'){air.set(-2.2,1.53,2.48);airQ.setFromEuler(new THREE.Euler(0,0,.25));}
    const grip=air.clone().lerp(writeGrip,beat.write);
    const gripQ=airQ.clone().slerp(writeQ,beat.write);
    pen.position.copy(home).lerp(grip,hold);pen.quaternion.copy(homeQ).slerp(gripQ,hold);
-   const pickReach=ease((t-9.1)/.9)*(1-ease((t-26)/.8))*e;
+   const pickReach=(gesture?beat.hold:ease((t-9.1)/.9)*(1-ease((t-26)/.8)))*e;
    const right=restRight.clone().lerp(pen.position,pickReach);
+   if(finishing){const park=ease(((gesture?.time??11)-.15)/1.0);pen.position.lerp(v(-2.55,1.325,2.65),park);if(gesture&&gesture.time<1.4)right.lerp(pen.position,ease(gesture.time/.25)*(1-ease((gesture.time-1.1)/.3)));}
    const edge=pagePoint(-1.32,1.37,2.43,pageProgress);
    edge.y+=.012;
    const left=restLeft.clone();
    (beat.cycle%2?right:left).lerp(edge,beat.reach*e);
    right.lerp(cup.localToWorld(v(-.113,0,0)),cupReach);
    const timerReach=(!preview||preview==='hourglass')?timer.reach:0;left.lerp(timer.grip,timerReach);
+   if(gesture){
+    const {id,time:g}=gesture,w=personality.w;
+    if(id==='glasses')left.lerp(v(-1.47,2.02+personality.glasses,2.46),ease((g-.7)/.6)*(1-ease((g-2.7)/.7)));
+    if(id==='cheek')right.lerp(v(-2.26,1.66,2.41),w);
+    if(id==='stretch'){left.lerp(v(-1.27,2.20,2.18),w);right.lerp(v(-2.43,2.20,2.18),w);}
+    if(id==='frustrated'){left.lerp(v(-1.48,1.39,2.47),w);right.lerp(v(-2.22,1.39,2.47),w);}
+    if(id==='aha'){left.y+=.08*w*Math.max(0,1-g/1.5);}
+    if(id==='breathe'){left.lerp(v(-1.53,1.48+personality.bodyY,2.36),w);right.lerp(v(-2.17,1.48+personality.bodyY,2.36),w);}
+    if(id==='finish'){
+     if(g<2.3)left.lerp(book.marker.position,ease(g/.6));
+     else if(g<5.1){const edge=v(.51,.01,0).applyAxisAngle(v(0,0,1),bookClose*Math.PI).add(book.pivot.position);left.lerp(edge,1-ease((g-4.6)/.5));}
+     else{left.y+=personality.y;right.y+=personality.y;}
+    }
+   }
    for(const arm of arms){
     const engaged=Math.max(e,restEngagement,timerReach);
-    const shoulder=arm.shoulder.clone();shoulder.z+=.16*engaged;
+    const shoulder=arm.shoulder.clone();shoulder.z+=.16*engaged;shoulder.y+=personality.bodyY;
     const rest=shoulder.clone().add(arm.restGrip);
     const target=rest.lerp(arm.side>0?left:right,engaged);
     const gripAmount=arm.side<0?Math.max(hold,cupReach):Math.max(beat.reach*e,timerReach);
@@ -200,11 +241,11 @@ export function createStudyMotion(scene,hero,pageMeshes){
    }
    // Leave completed annotations on the paper until the next page turn.
    const visibleMarks=t>=17?Math.min(15,Math.floor(clamp((t-17)/6.1,0,1)*15)):(beat.cycle>0&&t<4?15:0);
-   ink.visible=e>.95&&visibleMarks>0;
+   ink.visible=e>.95&&visibleMarks>0&&bookClose<.05;
    for(let i=0;i<marks.length;i++)marks[i].visible=i<visibleMarks;
-   return {time:clock.time,engagement:e,turning:beat.reach*e,writing:beat.write*e,drinking:cupLift,flipping:timerReach,
-    headYaw:e*(.045*Math.sin(beat.t*.8)+.07*beat.write)-.18*cupLift+timer.headYaw*(preview&&preview!=='hourglass'?0:1),
-    active:motion&&(!!preview||flipping||session.reading||(restActive&&restRunning&&breakTime<9))};
+   return {personality,time:clock.time,engagement:e,turning:beat.reach*e,writing:beat.write*e,drinking:cupLift,flipping:timerReach,
+    headYaw:personality.yaw+e*(.045*Math.sin(beat.t*.8)+.07*beat.write)-.18*cupLift+timer.headYaw*(preview&&preview!=='hourglass'?0:1),
+    active:motion&&(!!preview||!!gesture||flipping||session.reading||(restActive&&restRunning&&breakTime<9))};
   }
  };
 }

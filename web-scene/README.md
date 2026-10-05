@@ -72,3 +72,13 @@ Inicio suena al Empezar/Continuar estudio y al volver automáticamente del desca
 The live web UI is English, including loading/error states, timer phases, notifications, animation previews, sound names, clock editors, English weekday/month formatting and accessibility labels. Clock time zones, 24-hour display, saved settings and sound IDs are preserved.
 
 Copy follows the project marketing brief: Chatito speaks as a teammate in “we,” with light lowercase internet language, no guilt and no hustle framing. Examples: “hi bestie. tiny start together?”, “lowkey, we’ve got this. one thing at a time.” and “wait, we actually did that. water break?” Utility controls and permission errors remain literal and easy to understand.
+
+### Character gestures and anime reactions
+
+Twelve new previews live in **Vibes → Try the animations**: Wait, what?; Fix glasses; Think it over; Got it!; Forest gaze; Brain tangled; Cozy lean; Brain buffering; Nervous lil guy; Big stretch; Breathe together; and We did that! These supplement the existing reading, page turn, pencil fidget, writing, water and hourglass actions. Click a preview again to replay it; Back to pomodoro restores the session choreography without changing the timer.
+
+Focus alternates quiet study with two differently ordered 260-second gesture schedules. Gestures wait for the book/pencil action to settle; reread → think → understand becomes a small story. Questions build from ? to ???; other brief reactions include an idea, ellipsis, scribble, sweat drop and sparkles. Bubbles are lightweight HTML/SVG anchored to the head, outside the bokeh render, repositioned to avoid the settings panel. Frustration faces the book; it is never triggered by a user pausing or missing a session.
+
+Breaks begin with a stretch, then water, then two guided breathing cycles (4 seconds in, 6 out). Completion places the pencil beside the book, inserts a bookmark, articulates the actual right book half closed and celebrates before taking water. Resume still flips the hourglass first. The existing glasses and pupil triangles are separated for movement, gaze and blinking; matching cream socket backing prevents dark holes when the pupils close. Existing GLB assets are unchanged.
+
+Timer pause freezes the automatic gesture timeline. Motion off/reduced motion freezes poses and hides reaction bubbles. Manual previews work without advancing the pomodoro. Tests cover all twelve previews, quiet intervals, sequence variation, pause, reduced motion, the 4/6 breath cycle, preservation of original face triangles, cream backing behind closed eyes, and actual closed-book bounds. Browser visual checks cover confusion, glasses contact, thinking, closed eyes, frustration, stretching and the closed book.
