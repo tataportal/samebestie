@@ -13,13 +13,14 @@ import {mountAlerts} from './alerts.js';
 import {createStudyMotion} from './study-motion.js';
 import {createFaceRig,headTransform} from './personality.js';
 import {mountReactions} from './reactions.js';
+import {SCENE_NEAR,SCENE_FAR,createSceneDepth,prepareCharacterSurface} from './render-depth.js';
 import {removeStaticHourglass} from './hourglass.js';
 import {CozyBokehPass} from './bokeh.js';
 import {LayerRenderPass,partitionScene,markForeground,BACKGROUND,FOREGROUND} from './scene-layers.js';
 const $=id=>document.getElementById(id);
 mountClocks();const alerts=mountAlerts();
 const scene=new THREE.Scene();scene.background=new THREE.Color('#463327');
-const camera=new THREE.PerspectiveCamera(39.6,1,.1,40);camera.position.set(-1.85,1.95,5.6);camera.lookAt(-1.85,1.95,2.34);
+const camera=new THREE.PerspectiveCamera(39.6,1,SCENE_NEAR,SCENE_FAR);camera.position.set(-1.85,1.95,5.6);camera.lookAt(-1.85,1.95,2.34);
 const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(1);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.VSMShadowMap;renderer.shadowMap.autoUpdate=false;
@@ -30,7 +31,7 @@ const fill=new THREE.DirectionalLight('#c8dce0',.28);fill.position.set(1,2.5,5);
 const lamp=new THREE.PointLight('#ffa34f',26,5,2);lamp.position.set(-2.76,2.10,2.14);scene.add(lamp);
 const roomLight=new THREE.PointLight('#ff9d51',5,14,2);roomLight.position.set(0,3,0);scene.add(roomLight);
 const backLight=new THREE.PointLight('#ffad5c',6,10,2);backLight.position.set(1.5,3,-2);scene.add(backLight);
-const hdrTarget=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:Math.min(4,renderer.capabilities.maxSamples)});
+const hdrTarget=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,depthTexture:createSceneDepth(),samples:Math.min(4,renderer.capabilities.maxSamples)});
 const composer=new EffectComposer(renderer,hdrTarget);
 for(const rt of [composer.renderTarget1,composer.renderTarget2]){rt.texture.generateMipmaps=true;rt.texture.minFilter=THREE.LinearMipmapLinearFilter;}
 // Render and blur the room alone, then draw opaque foreground with its own
@@ -76,7 +77,7 @@ try{
  m.onBeforeCompile=shader=>{shader.uniforms.frontLampStrength=lampDimmer;shader.uniforms.frontLampTint=lampTint;
  shader.vertexShader='varying float cozyWorldZ;\n'+shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\ncozyWorldZ=(modelMatrix*vec4(transformed,1.)).z;');
  shader.fragmentShader='uniform float frontLampStrength;uniform vec3 frontLampTint;varying float cozyWorldZ;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance*=mix(vec3(1.),frontLampTint*frontLampStrength,smoothstep(1.2,1.8,cozyWorldZ));');};
- }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){o.receiveShadow=false;if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
+ }if(o.name.includes('Bao'))o.visible=false;if(o.name.includes('ReadingPage'))pageMeshes.push(o);if(o.name.includes('Chatito')){prepareCharacterSurface(o);if(!o.name.includes('Leg'))hero.push({o,y:o.position.y});}});
  scene.add(gltf.scene);removeStaticHourglass(gltf.scene);partitionScene(scene);
  faceRig=createFaceRig(hero.find(({o})=>o.name.includes('Head'))?.o);
  for(const {o} of hero){if(o.name.includes('Arm'))continue;const p=new THREE.Group();p.position.set(-1.85,1.48,1.84);scene.add(p);p.attach(o);pose.push({p,name:o.name,y:p.position.y});if(o.name.includes('Head'))headPivot=p;}
