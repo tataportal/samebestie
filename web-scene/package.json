@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node scripts/focus.test.mjs && node scripts/raycast-seam.mjs && node scripts/study-motion.test.mjs && node scripts/clocks-alerts.test.mjs && node scripts/notifications.test.mjs && node scripts/scene-layers.test.mjs && node scripts/hourglass.test.mjs && node scripts/personality.test.mjs && node scripts/character-look.test.mjs && node scripts/groove.test.mjs && node scripts/radio.test.mjs"
+    "test": "node scripts/focus.test.mjs && node scripts/raycast-seam.mjs && node scripts/study-motion.test.mjs && node scripts/clocks-alerts.test.mjs && node scripts/notifications.test.mjs && node scripts/scene-layers.test.mjs && node scripts/hourglass.test.mjs && node scripts/personality.test.mjs && node scripts/character-look.test.mjs && node scripts/groove.test.mjs && node scripts/radio.test.mjs && node scripts/ambient.test.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"
