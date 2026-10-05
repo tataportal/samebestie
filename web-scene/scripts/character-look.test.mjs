@@ -9,7 +9,7 @@ import {partitionScene,markForeground,FOREGROUND} from '../src/scene-layers.js';
 import {prepareCharacterSurface} from '../src/render-depth.js';
 import {createStudyMotion} from '../src/study-motion.js';
 import {createWardrobe} from '../src/wardrobe.js';
-import {repositionDeskLamp} from '../src/desk-lamp.js';
+import {repositionDeskLamp,LAMP_LIGHT_POSITION,LAMP_LIGHT_TARGET,LAMP_BOOK_TARGET} from '../src/desk-lamp.js';
 const bytes=fs.readFileSync(new URL('../public/models/cozy-room.glb',import.meta.url));
 const {scene:root}=await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
 const scene=new T.Scene();scene.add(root);const hero=[],pages=[];
@@ -20,6 +20,10 @@ const originalTriangles=triangleCount(),fixedFoot=[];scene.updateMatrixWorld(tru
 for(let i=0;i<originalRoom.geometry.index.count;i++){footPoint.fromBufferAttribute(originalPositions,originalRoom.geometry.index.getX(i)).applyMatrix4(originalRoom.matrixWorld);if(footPoint.y<1.4&&footPoint.x<-2.4&&footPoint.z>1.8)fixedFoot.push(footPoint.clone())}
 const fixtures=repositionDeskLamp(scene);assert.equal(fixtures.length,2,'lamp housing and emitter are extracted together');assert.equal(triangleCount(),originalTriangles,'moving the lamp preserves every triangle');
 let footVertices=0;for(const fixture of fixtures){const positions=fixture.geometry.attributes.position;for(let i=0;i<positions.count;i++){footPoint.fromBufferAttribute(positions,i);if(footPoint.y<1.4){footVertices++;assert.ok(fixedFoot.some(p=>p.distanceTo(footPoint)<1e-5),'lamp base stays planted at its original position')}}}assert.ok(footVertices>0);
+const beamDirection=LAMP_LIGHT_TARGET.clone().sub(LAMP_LIGHT_POSITION).normalize(),beamHit=new T.Vector3();
+new T.Ray(LAMP_LIGHT_POSITION,beamDirection).intersectPlane(new T.Plane(new T.Vector3(0,1,0),-LAMP_BOOK_TARGET.y),beamHit);
+assert.ok(beamHit.x>-2.48&&beamHit.x<-1.25&&beamHit.z>2.10&&beamHit.z<2.98,'lamp beam lands on the open book');
+const panelNormals=fixtures.find(f=>f.name==='Desk lamp underside').geometry.attributes.normal;let aligned=false;for(let i=0;i<panelNormals.count;i++)if(new T.Vector3().fromBufferAttribute(panelNormals,i).dot(beamDirection)>.999)aligned=true;assert.ok(aligned,'the physical luminous panel points along the light beam');
 const lampBox=new T.Box3();for(const fixture of fixtures)lampBox.union(new T.Box3().setFromObject(fixture));
 const head=root.getObjectByName('Web_Chatito_Head');const face=createFaceRig(head,CHATITO_FACE);
 const pupilAttribute=face.eyes[0].pivot.children[0].geometry.attributes.position;
