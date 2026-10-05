@@ -26,13 +26,18 @@ export function mountRadio(){
  try{const saved=Number(localStorage.getItem('bestie-radio-station'));if(STATIONS[saved])selected=saved;$('radio-volume').value=localStorage.getItem('bestie-radio-volume')??45}catch{}
  const controller=createRadioPlayer({
   canPlay:()=>!panel.hidden&&!document.hidden&&!$('radio-screen').hidden,
-  onStatus:text=>$('radio-status').textContent=text,
-  onPlaying:playing=>{panel.classList.toggle('on-air',playing);$('radio-play').innerHTML=playing?'Ⅱ <span>Pause</span>':'▶ <span>Play</span>';$('radio-play').setAttribute('aria-label',playing?'Pause radio':'Play radio')},
+  onStatus:text=>{$('radio-status').textContent=text;syncPlayControl()},
+  onPlaying:playing=>{panel.classList.toggle('on-air',playing);syncPlayControl()},
   createPlayer:events=>{
    $('radio-player-slot').replaceChildren();const slot=document.createElement('div');$('radio-player-slot').append(slot);
    return new window.YT.Player(slot,{width:'100%',height:'200',playerVars:{listType:'playlist',list:STATIONS[selected].id,origin:location.origin,playsinline:1,controls:1},events:{...events,onReady:event=>{events.onReady(event);$('radio-next').disabled=false}}});
   },
  });
+ function syncPlayControl(){
+  const playing=controller.playing,pending=controller.pending;
+  $('radio-play').innerHTML=playing?'Ⅱ <span>Pause</span>':pending?'■ <span>Stop</span>':'▶ <span>Play</span>';
+  $('radio-play').setAttribute('aria-label',playing?'Pause radio':pending?'Stop tuning':'Play radio');
+ }
  controller.volume($('radio-volume').value);
  function select(i){selected=i;controller.select(i);const s=STATIONS[i];$('radio-name').textContent=s.name;$('radio-frequency').textContent=s.number;$('radio-link').href=`https://music.youtube.com/playlist?list=${s.id}`;panel.querySelectorAll('[data-station]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.station)===i)));try{localStorage.setItem('bestie-radio-station',i)}catch{}}
  select(selected);

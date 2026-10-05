@@ -8,7 +8,7 @@ export const STATIONS = [
 
 // Own the async player lifecycle separately from the scene and Pomodoro.
 export function createRadioPlayer({createPlayer,onStatus,onPlaying=()=>{},canPlay=()=>true,schedule=setTimeout,cancel=clearTimeout}) {
- let player=null,ready=false,generation=0,station=0,index=0,wanted=false,playing=false,volume=45,retry=null,watchdog=null,failed=false;
+ let player=null,ready=false,generation=0,station=0,index=0,wanted=false,playing=false,volume=45,retry=null,watchdog=null,failed=false,handleError=null;
  const tried=new Set();
  const status=text=>onStatus(text);
  function active(value){playing=value;onPlaying(value)}
@@ -33,7 +33,7 @@ export function createRadioPlayer({createPlayer,onStatus,onPlaying=()=>{},canPla
      const current=player.getPlaylistIndex();if(current>=0)index=current;
      status(player.getVideoData?.().title || 'On air · make yourself comfy');
     }else if(event.data===2){active(false);if(retry===null){wanted=false;status('Paused · no rush')}}
-    else if(event.data===3){if(watchdog!==null)cancel(watchdog);watchdog=null;active(false);status('Tuning in…')}
+    else if(event.data===3){active(false);status('Tuning in…')}
     else if(event.data===0){active(false);wanted=false;status('Station finished · play it again?')}
     else if(event.data===5){active(false);status('Ready when you are')}
    },
@@ -54,16 +54,16 @@ export function createRadioPlayer({createPlayer,onStatus,onPlaying=()=>{},canPla
     retry=schedule(()=>{
      retry=null;if(token!==generation||!wanted||!canPlay())return;index=next;load();
      // YouTube can suppress a repeated 150 event on adjacent blocked tracks.
-     // Retry only while recovery receives no buffering/playing event at all.
-     watchdog=schedule(()=>{watchdog=null;if(token===generation&&wanted&&canPlay()&&!playing)events.onError({data:150})},6000);
+     // Allow a short recovery window; an error overlay can report buffering too.
+     watchdog=schedule(()=>{watchdog=null;if(token===generation&&wanted&&canPlay()&&!playing)events.onError({data:150})},8000);
     },900);
    },
   };
-  player=createPlayer(events);
+  handleError=events.onError;player=createPlayer(events);
  }
  return {
   select(value){if(!Number.isInteger(value)||!STATIONS[value])return;station=value;index=0;tried.clear();active(false);if(player)boot()},
-  play(){wanted=true;tried.clear();if(!player)boot();else if(ready){if(failed){failed=false;load()}else player.playVideo()}},
+  play(){wanted=true;tried.clear();if(!player)boot();else if(ready){if(failed){handleError({data:150})}else player.playVideo()}},
   pause(){stop();status('Paused · no rush')},
   next(){if(!ready)return;clearRetry();tried.clear();wanted=true;failed=false;const current=player.getPlaylistIndex();const length=player.getPlaylist()?.length;index=length?((current>=0?current:index)+1)%length:index+1;load()},
   volume(value){volume=Math.max(0,Math.min(100,Number(value)||0));if(ready)player.setVolume(volume)},

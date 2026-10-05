@@ -30,6 +30,6 @@ const recovery=createRadioPlayer({createPlayer:e=>{recoveryEvents=e;return recov
 function tick(){const [id,fn]=scheduled.entries().next().value;scheduled.delete(id);fn()}
 recovery.play();recoveryEvents.onReady({target:recoveryPlayer});recoveryEvents.onError({data:150});tick();assert.equal(recoveryIndex,1);
 tick();tick();assert.equal(recoveryIndex,2,'silent second restriction recovers without an endless stall');
-recoveryEvents.onStateChange({data:3});assert.equal(scheduled.size,0,'a real buffering event cancels silent-error recovery');
+recoveryEvents.onStateChange({data:3});assert.equal(scheduled.size,1,'buffering alone can accompany an unavailable overlay');
 recoveryEvents.onStateChange({data:1});recovery.close();assert.equal(scheduled.size,0);
-console.log('PASS: consecutive silent YouTube restrictions recover; buffering cancels recovery.');
+console.log('PASS: consecutive silent YouTube restrictions recover; playback cancels recovery.');
