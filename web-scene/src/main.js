@@ -9,6 +9,7 @@ import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 import './style.css';
 import {mountRadio} from './radio.js';
 import {mountTodo} from './todo.js';
+import {mountMinimalMode} from './minimal-mode.js';
 import {recolorHighlighter} from './desk-colors.js';
 import {repositionDeskLamp,LAMP_LIGHT_POSITION,LAMP_LIGHT_TARGET} from './desk-lamp.js';
 import {mountFocus} from './focus.js';
@@ -76,6 +77,7 @@ $('reset-look').onclick=()=>{settings={...approvedLook};applyLook()};
 function syncMotion(){$('motion').textContent=motion?'Pause motion':'Enable motion';$('motion').setAttribute('aria-pressed',String(motion))}
 $('motion').onclick=()=>{motion=!motion;syncMotion()};reduced.addEventListener('change',e=>{motion=!e.matches;syncMotion()});syncMotion();
 window.addEventListener('resize',resize);applyLook(false);
+const minimalMode=mountMinimalMode();
 const reactions=mountReactions(mountReactionAudio($('reaction-sound')));
 const pageMeshes=[];let pose=[],studyMotion,faceRig,headPivot,characterLook,wardrobe;
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -129,7 +131,7 @@ function frame(now){
   p.rotation.x=0;p.rotation.y=0;p.rotation.z=personality.bodyRoll;p.position.y+=personality.bodyY;p.position.x=-1.85;p.position.z=1.84-BOOK_BODY_RETRACTION*activity.bookClearance;
   if(name.includes('Head')){const h=headTransform(activity,breath);p.position.copy(h.position);p.rotation.copy(h.rotation);}
  }
- const blinkT=phaseTime%5.7,blink=motion?smooth(blinkT/.10)*(1-smooth((blinkT-.13)/.20)):0;faceRig.update(personality,blink);reactions.update(personality,headPivot,camera,motion);
+ const blinkT=phaseTime%5.7,blink=motion?smooth(blinkT/.10)*(1-smooth((blinkT-.13)/.20)):0;faceRig.update(personality,blink);reactions.update(personality,headPivot,camera,motion&&!minimalMode.enabled);
  // This camera is always the intimate focus view; Bao stays hidden.
  if(previousFocus!==focusSession.focusing){renderer.shadowMap.needsUpdate=true;previousFocus=focusSession.focusing;}
  if(activity.active&&now-lastShadow>200){renderer.shadowMap.needsUpdate=true;lastShadow=now;}

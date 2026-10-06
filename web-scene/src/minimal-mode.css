@@ -1,0 +1,15 @@
+/* A presentation mode only: clocks, Pomodoro and audio keep their state. */
+.ultra-minimal header,.ultra-minimal #left-rail,.ultra-minimal #settings,.ultra-minimal #radio,.ultra-minimal .focus-copy,.ultra-minimal .reaction,.ultra-minimal #turn-notice{display:none!important}
+.ultra-minimal footer{bottom:max(32px,env(safe-area-inset-bottom));gap:0}
+.ultra-minimal .timer{display:block;width:auto;max-width:none;padding:0;border:0;border-radius:0;background:none;backdrop-filter:none;box-shadow:none}
+.ultra-minimal .duration-fields,.ultra-minimal .rounds-field,.ultra-minimal .timer-actions,.ultra-minimal #phase{display:none}
+.ultra-minimal .timer-clock{display:block;border:0;padding:0}
+.ultra-minimal .timer-clock #time{display:block;min-width:150px;padding:8px 18px;font:300 clamp(32px,5vw,44px)/1.15 system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.03em;color:#fff;text-align:center;text-shadow:0 2px 14px #0006;cursor:pointer}
+.ultra-minimal #time:focus-visible{outline:1px solid #ffffff80;outline-offset:4px;border-radius:4px}
+#minimal-clock{position:absolute;top:28px;left:28px;color:#fff;font:400 14px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.06em;text-shadow:0 1px 8px #0006;pointer-events:none}
+#minimal-exit{position:absolute;z-index:6;top:16px;right:18px;width:44px;height:44px;padding:0;border:0;border-radius:0;background:none;backdrop-filter:none;box-shadow:none;color:#fff;font-size:22px;opacity:0;transition:opacity .2s}
+#minimal-exit:hover,#minimal-exit:focus-visible{opacity:1;background:none}
+#minimal-exit[hidden],#minimal-clock[hidden]{display:none}
+@media(hover:none){#minimal-exit{opacity:.35}}
+@media(max-width:640px){#minimal-clock{top:22px;left:20px}.ultra-minimal footer{bottom:max(24px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){#minimal-exit{transition:none}}

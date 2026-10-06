@@ -21,6 +21,7 @@ export function mountFocus({onTurn=()=>{},onStart=()=>{},onActivate=()=>{}}={}){
   $('time').textContent=`${String(Math.floor(state.remaining/60)).padStart(2,'0')}:${String(state.remaining%60).padStart(2,'0')}`;
   $('phase').textContent=state.complete?'All done':`${state.phase==='study'?'Focus':'Break'} · ${state.round}/${state.config.rounds}`;
   $('start').textContent=state.running?'Pause':state.complete?'Go again':state.started?'Resume':'Start';
+  $('time').ariaLabel=`${$('start').textContent} · ${$('phase').textContent} · ${$('time').textContent}`;
   $('reset').hidden=!state.started&&!state.complete;
   $('message').textContent=state.complete?'wait, we actually did that. water break?':!state.started?'hi bestie. tiny start together?':!state.running?'we can take a sec. still here.':state.phase==='rest'?'we’re on a hydration side quest.':'lowkey, we’ve got this. one thing at a time.';
   for(const id of ['study','rest','rounds'])$(id).disabled=state.started&&!state.complete;
