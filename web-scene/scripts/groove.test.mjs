@@ -9,7 +9,7 @@ g.reset();g.update(2);const first=g.update(0),second=g.update(.5);assert.ok(firs
 g.reset();g.update(2);const start=g.update(0),nextBar=g.update(2);assert.ok(Math.abs(start.pitch-nextBar.pitch)<1e-9);assert.ok(Math.abs(start.roll-nextBar.roll)<1e-9);
 const frozen=g.update(0);assert.deepEqual(g.update(0),frozen,'zero delta freezes the beat');
 g.setTempo(60);assert.deepEqual(g.update(0),frozen,'tempo adjustment preserves phase');assert.equal(g.update(1).beats,frozen.beats+1);
-g.setTempo('bad');assert.equal(g.tempo,80);g.setTempo(900);assert.equal(g.tempo,180);g.setTempo(5);assert.equal(g.tempo,40);
+g.setTempo('bad');assert.equal(g.tempo,80);g.setTempo(900);assert.equal(g.tempo,900);g.setTempo(5);assert.equal(g.tempo,5);g.setTempo(0);assert.equal(g.tempo,80);g.setTempo(-5);assert.equal(g.tempo,80);
 g.reset();assert.equal(g.update(0).beat,0);
 const scene=new T.Scene(),m=createStudyMotion(scene,[],[]),idle={focusing:false,reading:false,state:{}};
 m.preview('bop');m.setTempo(120);for(let i=0;i<180;i++)m.update(1/30,idle,true);

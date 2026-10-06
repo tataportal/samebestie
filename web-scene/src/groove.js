@@ -4,7 +4,7 @@ export function createGroove(){
  let bpm=80,beats=0,elapsed=0;
  return {
   get tempo(){return bpm},
-  setTempo(value){const n=Number(value);bpm=Number.isFinite(n)&&n>0?Math.round(Math.max(40,Math.min(180,n))):80;},
+  setTempo(value){const n=Number(value);bpm=Number.isFinite(n)&&n>0?Math.max(1,Math.round(n)):80;},
   reset(){beats=0;elapsed=0;},
   update(dt){beats+=dt*bpm/60;elapsed+=dt;const phase=beats*Math.PI*2,bar=phase/4;
    const fade=Math.min(1,elapsed/.6),w=fade*fade*(3-2*fade);
