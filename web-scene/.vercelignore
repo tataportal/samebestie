@@ -1,6 +1,6 @@
-node_modules/
-dist/
 source-assets/
 verification/
+drafts/
+node_modules/
+dist/
 __pycache__/
-.vercel
