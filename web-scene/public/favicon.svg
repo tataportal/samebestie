@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Chatito the penguin</title>
+  <g shape-rendering="crispEdges">
+    <path fill="#251f20" d="M20 4h24v4h8v8h4v32h-4v8H12v-8H8V16h4V8h8z"/>
+    <path fill="#fff2d7" d="M16 20h12v4h8v-4h12v4h4v20h-4v4H16v-4h-4V24h4z"/>
+    <path fill="#251f20" d="M12 20h16v4H16v16h12V24h4v4h4v-4h4v16h12V24H40v-4h16v24H36V32h-4v12H12z"/>
+    <path fill="#171819" d="M20 28h4v8h-4zm20 0h4v8h-4z"/>
+    <path fill="#ffffff" d="M20 28h2v2h-2zm20 0h2v2h-2z"/>
+    <path fill="#ff9b34" d="M28 36h8v4h4v4H24v-4h4z"/>
+    <path fill="#4698bb" d="M12 48h40v8H12zm28 8h12v8H40z"/>
+    <path fill="#75b7d1" d="M12 48h40v4H12z"/>
+  </g>
+</svg>
