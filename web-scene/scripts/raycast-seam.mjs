@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import fs from 'node:fs';
-import {SCENE_NEAR,SCENE_FAR,createSceneDepth,prepareCharacterSurface} from '../src/render-depth.js';
+import {SCENE_NEAR,SCENE_FAR,createSceneTarget,prepareCharacterSurface} from '../src/render-depth.js';
 
 const bytes=fs.readFileSync(new URL('../public/models/cozy-room.glb',import.meta.url));
 const gltf=await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(
@@ -15,8 +15,12 @@ assert.ok(head,'Published GLB has a head');
 const originalMaterial=head.material;prepareCharacterSurface(head);
 assert.notEqual(head.material,originalMaterial,'surface policy must not mutate shared room materials');
 assert.equal(head.material.side,THREE.FrontSide);
-const target=new THREE.WebGLRenderTarget(16,16,{depthTexture:createSceneDepth()});
-const pingpong=target.clone();assert.equal(pingpong.depthTexture.type,THREE.FloatType,'both composer buffers retain 32-bit float depth');target.dispose();pingpong.dispose();
+const target=createSceneTarget();
+const pingpong=target.clone();
+for(const buffer of [target,pingpong]){
+ assert.equal(buffer.samples,0,'nearly adjacent voxel surfaces must not pass through a multisample depth resolve');
+ assert.equal(buffer.depthTexture.type,THREE.FloatType,'both composer buffers retain 32-bit float depth');
+}target.dispose();pingpong.dispose();
 // Actual near-coincident bevel/backing hits: the new depth range must keep
 // much more than one float depth step between them, including rotated poses.
 const depthRay=new THREE.Raycaster(new THREE.Vector3(-2.114,1.548,5.6),new THREE.Vector3(0,0,-1));

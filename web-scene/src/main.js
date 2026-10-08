@@ -22,7 +22,7 @@ import {applyCharacterLook,CHATITO_FACE,BOOK_BODY_RETRACTION} from './character-
 import {mountReactions} from './reactions.js';
 import {mountReactionAudio} from './reaction-audio.js';
 import {smooth} from './motion-curves.js';
-import {SCENE_NEAR,SCENE_FAR,createSceneDepth,prepareCharacterSurface} from './render-depth.js';
+import {SCENE_NEAR,SCENE_FAR,createSceneTarget,prepareCharacterSurface} from './render-depth.js';
 import {removeStaticHourglass} from './hourglass.js';
 import {CozyBokehPass} from './bokeh.js';
 import {LayerRenderPass,partitionScene,markForeground,BACKGROUND,FOREGROUND} from './scene-layers.js';
@@ -40,7 +40,7 @@ const fill=new THREE.DirectionalLight('#c8dce0',.28);fill.position.set(1,2.5,5);
 const lamp=new THREE.SpotLight('#ffa34f',26,5,.72,1,2);lamp.position.copy(LAMP_LIGHT_POSITION);lamp.target.position.copy(LAMP_LIGHT_TARGET);scene.add(lamp,lamp.target);
 const roomLight=new THREE.PointLight('#ff9d51',5,14,2);roomLight.position.set(0,3,0);scene.add(roomLight);
 const backLight=new THREE.PointLight('#ffad5c',6,10,2);backLight.position.set(1.5,3,-2);scene.add(backLight);
-const hdrTarget=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,depthTexture:createSceneDepth(),samples:Math.min(4,renderer.capabilities.maxSamples)});
+const hdrTarget=createSceneTarget();
 const composer=new EffectComposer(renderer,hdrTarget);
 for(const rt of [composer.renderTarget1,composer.renderTarget2]){rt.texture.generateMipmaps=true;rt.texture.minFilter=THREE.LinearMipmapLinearFilter;}
 // Render and blur the room alone, then draw opaque foreground with its own
